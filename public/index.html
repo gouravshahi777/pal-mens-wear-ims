@@ -267,6 +267,7 @@ tbody tr:hover td{background:var(--bg)}
           <div class="card"><div class="ct">Live insights</div><div id="insights"></div></div>
           <div class="card"><div class="ct">Monthly purchase trend</div><div class="chw"><canvas id="trend-c"></canvas></div></div>
         </div>
+        <div class="card"><div class="ct">Data health — sales vs purchases</div><div id="data-health"></div></div>
       </div>
 
       <!-- LIVE INVENTORY -->
@@ -720,7 +721,9 @@ function getArtStats() {
   });
   return Object.values(m).map(a => {
     a.netSold     = Math.max(0, a.grossSold - a.returned);
-    a.liveStock   = Math.max(0, a.purchased - a.netSold);
+    const rawDiff = a.purchased - a.netSold;
+    a.liveStock   = Math.max(0, rawDiff);
+    a.oversold    = rawDiff < 0 ? -rawDiff : 0; // phantom units: sold without a matching purchase
     a.lastSale    = a.saleDates.length ? new Date(Math.max(...a.saleDates)) : null;
     a.daysSince   = a.lastSale ? Math.max(0,Math.round((new Date()-a.lastSale)/86400000)) : 9999;
     a.avgCost     = a.purchased > 0 ? a.purchaseCost / a.purchased : 0;
@@ -815,22 +818,59 @@ function buildOverview() {
   const totPurchQty = G.purchase.reduce((s,r)=>s+r.qty,0);
   const totSaleQty  = G.sale.reduce((s,r)=>s+r.qty,0);
   const totRetQty   = G.returns.reduce((s,r)=>s+r.qty,0);
-  const totStock    = arts.reduce((s,a)=>s+a.liveStock,0);
+  const totStockClamped = arts.reduce((s,a)=>s+a.liveStock,0);   // per-article, floored at 0
+  const totOversold     = arts.reduce((s,a)=>s+(a.oversold||0),0); // phantom units
+  const totStockTrue    = totStockClamped - totOversold;          // honest live stock
   const totStockVal = arts.reduce((s,a)=>s+a.stockVal,0);
   const dead        = arts.filter(a=>a.daysSince>=90&&a.liveStock>0).length;
+  const mismatchArts = arts.filter(a=>a.oversold>0).length;
 
   document.getElementById('ov-sub').innerHTML =
     `<span style="color:var(--green);font-weight:600">● Data saved permanently</span> &nbsp;·&nbsp;
      ${G.purchase.length} purchase rows &nbsp;·&nbsp; ${G.sale.length} sale rows &nbsp;·&nbsp; ${G.returns.length} returns`;
 
+  const liveStockSub = totOversold > 0
+    ? `⚠ ${totOversold.toLocaleString()} phantom units hidden`
+    : '';
+
   setMG('ov-m',[
     {l:'Total purchased (qty)', v:totPurchQty.toLocaleString()},
     {l:'Total sold (net qty)',  v:(totSaleQty-totRetQty).toLocaleString()},
     {l:'Total returns',        v:totRetQty, s:'restocked automatically', c:'pu'},
-    {l:'Live stock (units)',   v:totStock.toLocaleString()},
+    {l:'Live stock (units)',   v:totStockTrue.toLocaleString(), s:liveStockSub, c:totOversold>0?'dn':''},
     {l:'Stock value',          v:'₹'+Math.round(totStockVal).toLocaleString('en-IN')},
     {l:'Dead stock items',     v:dead, s:'90+ days unsold', c:'dn'},
   ]);
+
+  // Data Health panel: surface articles where sales > purchases
+  const healthEl = document.getElementById('data-health');
+  if (healthEl) {
+    if (mismatchArts === 0) {
+      healthEl.innerHTML = '<div style="font-size:12px;color:var(--green-m);font-weight:600">✓ All sales match purchase records — data is clean.</div>';
+    } else {
+      const bad = arts.filter(a=>a.oversold>0).sort((a,b)=>b.oversold-a.oversold).slice(0,20);
+      healthEl.innerHTML = `
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+          <div style="padding:8px 14px;background:var(--red-l);border-radius:var(--r);font-size:12px;color:var(--red-m);font-weight:700">${mismatchArts} articles sold more than purchased</div>
+          <div style="padding:8px 14px;background:var(--red-l);border-radius:var(--r);font-size:12px;color:var(--red-m);font-weight:700">${totOversold.toLocaleString()} phantom units (sales without matching purchases)</div>
+          <div style="padding:8px 14px;background:var(--amber-l);border-radius:var(--r);font-size:12px;color:var(--amber);font-weight:600">Likely causes: opening stock not entered, mismatched lot/item/size names, missing purchase bills</div>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>Lot no</th><th>Item</th><th>Size</th><th>Purchased</th><th>Net sold</th><th>Phantom units</th><th>Brand / Supplier</th></tr></thead>
+          <tbody>${bad.map(a=>`<tr>
+            <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
+            <td style="font-weight:700">${a.item||'—'}</td>
+            <td>${a.size||'—'}</td>
+            <td>${a.purchased}</td>
+            <td>${a.netSold}</td>
+            <td style="font-weight:700;color:var(--red-m)">+${a.oversold}</td>
+            <td>${a.supplier||a.brand||'—'}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+        ${mismatchArts>20?`<div style="font-size:11px;color:var(--muted);margin-top:8px">Showing worst 20 of ${mismatchArts} mismatched articles.</div>`:''}
+      `;
+    }
+  }
 
   const itemSold={};
   G.sale.forEach(r=>{const k=r.item||'Unknown';if(!itemSold[k])itemSold[k]={item:k,qty:0};itemSold[k].qty+=r.qty;});
@@ -841,6 +881,7 @@ function buildOverview() {
   const ins=[];
   const topItem=Object.values(itemSold).sort((a,b)=>b.qty-a.qty)[0];
   if(topItem) ins.push({i:'🔥',t:`${topItem.item} is your fastest selling item`,s:`${topItem.qty} net units sold`});
+  if(mismatchArts) ins.push({i:'🧾',t:`${mismatchArts} articles have sales without matching purchases`,s:`${totOversold.toLocaleString()} phantom units — check Data Health below`});
   if(dead) ins.push({i:'⚠️',t:`${dead} articles unsold for 90+ days`,s:`₹${Math.round(arts.filter(a=>a.daysSince>=90&&a.liveStock>0).reduce((s,a)=>s+a.stockVal,0)).toLocaleString('en-IN')} capital blocked`});
   if(totRetQty) ins.push({i:'🔄',t:`${totRetQty} units returned by customers`,s:'All restocked in live inventory automatically'});
   const lowStock=arts.filter(a=>a.liveStock>0&&a.liveStock<=3&&a.grossSold>0)[0];
@@ -854,8 +895,11 @@ function buildOverview() {
 
 function buildInventory() {
   const arts=getArtStats();
+  const clamped = arts.reduce((s,a)=>s+a.liveStock,0);
+  const oversold = arts.reduce((s,a)=>s+(a.oversold||0),0);
+  const trueStock = clamped - oversold;
   setMG('inv-m',[
-    {l:'Total live stock',     v:arts.reduce((s,a)=>s+a.liveStock,0).toLocaleString()+' units'},
+    {l:'Total live stock',     v:trueStock.toLocaleString()+' units', s:oversold>0?`⚠ ${oversold.toLocaleString()} phantom units`:'', c:oversold>0?'dn':''},
     {l:'Stock value',          v:'₹'+Math.round(arts.reduce((s,a)=>s+a.stockVal,0)).toLocaleString('en-IN')},
     {l:'Out of stock',         v:arts.filter(a=>a.liveStock===0).length, c:'dn'},
     {l:'Low stock (≤5)',       v:arts.filter(a=>a.liveStock>0&&a.liveStock<=5).length, c:'dn'},
