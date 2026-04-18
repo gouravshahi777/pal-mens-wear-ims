@@ -3,31 +3,54 @@ const session  = require('express-session');
 const multer   = require('multer');
 const XLSX     = require('xlsx');
 const path     = require('path');
+const fs       = require('fs');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// ── Replit DB — safe init ────────────────────────────────────────────────────
-let db = null;
-try {
-  const Database = require('@replit/database');
-  db = new Database();
-  console.log('✅ Replit Database connected');
-} catch (e) {
-  console.warn('⚠️ Replit Database not available, using in-memory fallback');
-  const memStore = {};
-  db = {
-    get: async (k) => memStore[k] !== undefined ? memStore[k] : null,
-    set: async (k, v) => { memStore[k] = v; },
-    delete: async (k) => { delete memStore[k]; },
-  };
+// ── STORAGE — file-based (works on Render, Railway, Fly, etc.) ───────────────
+// Uses @replit/database ONLY if actually running on Replit (has REPLIT_DB_URL).
+// Otherwise, uses a simple data.json file on disk.
+const DATA_FILE = path.join(__dirname, 'data.json');
+
+let storage = null;
+
+function loadFromFile() {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const raw = fs.readFileSync(DATA_FILE, 'utf8');
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.error('Error reading data.json:', e.message);
+  }
+  return {};
 }
 
-// ── Replit DB helpers ────────────────────────────────────────────────────────
+function saveToFile(data) {
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+    return true;
+  } catch (e) {
+    console.error('Error writing data.json:', e.message);
+    return false;
+  }
+}
+
+// Initialize file-based storage
+const fileData = loadFromFile();
+storage = {
+  get: async (k) => fileData[k] !== undefined ? fileData[k] : null,
+  set: async (k, v) => { fileData[k] = v; saveToFile(fileData); },
+  delete: async (k) => { delete fileData[k]; saveToFile(fileData); },
+};
+console.log('✅ File-based storage ready (data.json)');
+
+// ── Storage helpers ──────────────────────────────────────────────────────────
 const CHUNK = 500;
-async function dbGet(k)    { try { const v = await db.get(k); return v ?? null; } catch { return null; } }
-async function dbSet(k, v) { try { await db.set(k, v); } catch(e) { console.error('DB set error:', e.message); } }
-async function dbDel(k)    { try { await db.delete(k); } catch {} }
+async function dbGet(k)    { try { const v = await storage.get(k); return v ?? null; } catch { return null; } }
+async function dbSet(k, v) { try { await storage.set(k, v); } catch(e) { console.error('Storage set error:', e.message); } }
+async function dbDel(k)    { try { await storage.delete(k); } catch {} }
 
 async function readAll(type) {
   const meta = await dbGet('meta_' + type);
@@ -100,10 +123,6 @@ function parseDateValue(dateRaw) {
 }
 
 // ── PURCHASE EXCEL PARSER ─────────────────────────────────────────────────────
-// Aryan's 51-column purchase format
-// RETURNS: { purchases: [...], salesFromPurchase: [...] }
-// Negative TOTAL QUANTITY → treated as a SALE (customer returned to supplier is rare;
-// but Aryan says: minus in purchase file = reverse/sale side → remove from stock)
 function parsePurchase(buffer) {
   const wb   = XLSX.read(buffer, { type: 'buffer', cellDates: false });
   const ws   = wb.Sheets[wb.SheetNames[0]];
@@ -148,7 +167,7 @@ function parsePurchase(buffer) {
   if (iDate === -1 || iParty === -1 || iQty === -1)
     throw new Error('Missing required columns: BILL DATE (or VOUCHER DATE), PARTY NAME, TOTAL QUANTITY');
 
-  const purchases        = [];
+  const purchases         = [];
   const salesFromPurchase = [];
 
   for (let i = headerRow + 1; i < raw.length; i++) {
@@ -177,7 +196,6 @@ function parsePurchase(buffer) {
     };
 
     if (qty > 0) {
-      // Normal purchase — add to stock
       purchases.push({
         ...rowBase,
         qty: absQty,
@@ -185,7 +203,6 @@ function parsePurchase(buffer) {
         amount: netAmount || (absQty * rate),
       });
     } else {
-      // NEGATIVE qty in purchase file → treat as SALE (remove from stock)
       salesFromPurchase.push({
         ...rowBase,
         agent:    '(From Purchase File - Reverse Entry)',
@@ -199,9 +216,6 @@ function parsePurchase(buffer) {
 }
 
 // ── SALE EXCEL PARSER ─────────────────────────────────────────────────────────
-// Aryan's 10-column sale format
-// RETURNS: { sales: [...], purchasesFromSale: [...] }
-// Negative SALE QTY → treated as PURCHASE / customer return (add back to stock)
 function parseSale(buffer) {
   const wb   = XLSX.read(buffer, { type: 'buffer', cellDates: false });
   const ws   = wb.Sheets[wb.SheetNames[0]];
@@ -244,8 +258,8 @@ function parseSale(buffer) {
   if (iDate === -1 || iCompany === -1 || iQty === -1)
     throw new Error('Missing required columns: BILL DATE, COMPANY NAME, SALE QTY');
 
-  const sales              = [];
-  const purchasesFromSale  = [];
+  const sales             = [];
+  const purchasesFromSale = [];
 
   for (let i = headerRow + 1; i < raw.length; i++) {
     const r = raw[i] || [];
@@ -271,10 +285,8 @@ function parseSale(buffer) {
     };
 
     if (qty > 0) {
-      // Normal sale — remove from stock
       sales.push({ ...rowBase, qty: absQty });
     } else {
-      // NEGATIVE qty in sale file → treat as PURCHASE (add back to stock)
       purchasesFromSale.push({
         ...rowBase,
         supplier: '(From Sale File - Customer Return)',
@@ -318,26 +330,18 @@ app.post('/api/upload/:type', auth(['owner', 'staff']), upload.single('file'), a
 
     if (type === 'purchase') {
       const result = parsePurchase(req.file.buffer);
-      // Positive qty → add to purchase
       if (result.purchases.length) await appendRows('purchase', result.purchases);
-      // Negative qty → add to sale (cross-conversion!)
       if (result.salesFromPurchase.length) await appendRows('sale', result.salesFromPurchase);
-
       purchaseRows  = result.purchases.length;
       convertedRows = result.salesFromPurchase.length;
-
       if (!purchaseRows && !convertedRows)
         return res.status(400).json({ error: 'No valid rows found in purchase file.' });
     } else {
       const result = parseSale(req.file.buffer);
-      // Positive qty → add to sale
       if (result.sales.length) await appendRows('sale', result.sales);
-      // Negative qty → add to purchase (cross-conversion!)
       if (result.purchasesFromSale.length) await appendRows('purchase', result.purchasesFromSale);
-
       saleRows      = result.sales.length;
       convertedRows = result.purchasesFromSale.length;
-
       if (!saleRows && !convertedRows)
         return res.status(400).json({ error: 'No valid rows found in sale file.' });
     }
@@ -348,7 +352,7 @@ app.post('/api/upload/:type', auth(['owner', 'staff']), upload.single('file'), a
       filename:     req.file.originalname,
       purchaseRows,
       saleRows,
-      convertedRows, // cross-converted rows (minus qty auto-flipped)
+      convertedRows,
       by:  req.session.user.name,
       role: req.session.user.role,
       at:  new Date().toISOString(),
@@ -365,7 +369,7 @@ app.post('/api/upload/:type', auth(['owner', 'staff']), upload.single('file'), a
         : undefined,
     });
   } catch (e) {
-    console.error(e);
+    console.error('Upload error:', e);
     res.status(500).json({ error: e.message });
   }
 });
