@@ -550,7 +550,7 @@ tbody tr:hover td{background:var(--bg)}
             <button class="btn-sm btn-danger" onclick="clearData('sale')">Clear All Sale Data</button>
             <button class="btn-sm btn-danger" onclick="clearData('returns')">Clear All Returns Data</button>
           </div>
-          <div style="font-size:11px;color:var(--muted)">Warning: This permanently deletes all records of that type from Replit DB.</div>
+          <div style="font-size:11px;color:var(--muted)">Warning: This permanently deletes all records of that type.</div>
         </div>
       </div>
 
@@ -648,7 +648,7 @@ async function doUpload(input, type, statId) {
     if (d.success) {
       let msg = '✓ File uploaded successfully — ';
       if (type==='purchase') msg += d.purchaseRows+' purchase rows saved';
-      else msg += d.saleRows+' sale rows + '+d.returnRows+' returns saved to inventory';
+      else msg += d.saleRows+' sale rows'+(d.convertedRows?' + '+d.convertedRows+' auto-converted rows':'')+' saved';
       st.className='up-stat st-ok'; st.textContent=msg;
       if (currentRole!=='staff') { loadData(); loadUlog(); }
     } else {
@@ -683,7 +683,7 @@ async function loadUlog() {
       <div class="ulog-row">
         <span style="font-weight:600">${u.filename}</span>
         <span class="tag ${u.type==='purchase'?'tb':'tg'}">${u.type}</span>
-        <span>${u.type==='purchase'?u.purchaseRows+' rows':u.saleRows+' sales, '+u.returnRows+' returns'}</span>
+        <span>${u.type==='purchase'?u.purchaseRows+' rows':u.saleRows+' sales'+(u.convertedRows?', '+u.convertedRows+' converted':'')}</span>
         <span style="color:var(--muted)">by ${u.by}</span>
         <span style="color:var(--muted)">${new Date(u.at).toLocaleString('en-IN')}</span>
       </div>`).join('');
@@ -696,22 +696,25 @@ async function loadUlog() {
 function getArtStats() {
   const m = {};
   G.purchase.forEach(r => {
-    const k = (r.lotNo||r.item)+'|'+(r.supplier||'')+'|'+(r.item||'')+'|'+(r.size||'');
-    if (!m[k]) m[k] = { lotNo:r.lotNo, item:r.item, supplier:r.supplier, size:r.size,
+    const k = (r.lotNo||'')+'|'+(r.item||'')+'|'+(r.size||'');
+    if (!m[k]) m[k] = { lotNo:r.lotNo, item:r.item, supplier:r.supplier||r.brand||'', brand:r.brand||'', size:r.size,
       purchased:0, purchaseCost:0, grossSold:0, returned:0, saleDates:[] };
     m[k].purchased += r.qty;
     m[k].purchaseCost += r.qty * (r.rate||0);
+    if (!m[k].supplier && r.supplier) m[k].supplier = r.supplier;
+    if (!m[k].brand && r.brand) m[k].brand = r.brand;
   });
   G.sale.forEach(r => {
-    const k = (r.lotNo||r.item)+'|'+(r.supplier||r.brand||'')+'|'+(r.item||'')+'|'+(r.size||'');
-    if (!m[k]) m[k] = { lotNo:r.lotNo, item:r.item, supplier:r.brand||r.supplier||'', size:r.size,
+    const k = (r.lotNo||'')+'|'+(r.item||'')+'|'+(r.size||'');
+    if (!m[k]) m[k] = { lotNo:r.lotNo, item:r.item, supplier:r.brand||r.supplier||'', brand:r.brand||'', size:r.size,
       purchased:0, purchaseCost:0, grossSold:0, returned:0, saleDates:[] };
     m[k].grossSold += r.qty;
     if (r.date) m[k].saleDates.push(new Date(r.date));
+    if (!m[k].brand && r.brand) m[k].brand = r.brand;
   });
   G.returns.forEach(r => {
-    const k = (r.lotNo||r.item)+'|'+(r.supplier||r.brand||'')+'|'+(r.item||'')+'|'+(r.size||'');
-    if (!m[k]) m[k] = { lotNo:r.lotNo, item:r.item, supplier:r.brand||r.supplier||'', size:r.size,
+    const k = (r.lotNo||'')+'|'+(r.item||'')+'|'+(r.size||'');
+    if (!m[k]) m[k] = { lotNo:r.lotNo, item:r.item, supplier:r.brand||r.supplier||'', brand:r.brand||'', size:r.size,
       purchased:0, purchaseCost:0, grossSold:0, returned:0, saleDates:[] };
     m[k].returned += r.qty;
   });
@@ -803,7 +806,6 @@ function buildAll() {
   buildDead();
   buildPurReg();
   buildSalReg();
-  // Rebuild weekly if tab is active
   if(document.getElementById('tab-weekly')?.classList.contains('active')) buildWeekly();
   if(currentRole==='owner') loadUlog();
 }
@@ -818,7 +820,7 @@ function buildOverview() {
   const dead        = arts.filter(a=>a.daysSince>=90&&a.liveStock>0).length;
 
   document.getElementById('ov-sub').innerHTML =
-    `<span style="color:var(--green);font-weight:600">● Replit DB — permanent storage</span> &nbsp;·&nbsp;
+    `<span style="color:var(--green);font-weight:600">● Data saved permanently</span> &nbsp;·&nbsp;
      ${G.purchase.length} purchase rows &nbsp;·&nbsp; ${G.sale.length} sale rows &nbsp;·&nbsp; ${G.returns.length} returns`;
 
   setMG('ov-m',[
@@ -830,14 +832,12 @@ function buildOverview() {
     {l:'Dead stock items',     v:dead, s:'90+ days unsold', c:'dn'},
   ]);
 
-  // Items sold
   const itemSold={};
   G.sale.forEach(r=>{const k=r.item||'Unknown';if(!itemSold[k])itemSold[k]={item:k,qty:0};itemSold[k].qty+=r.qty;});
   G.returns.forEach(r=>{const k=r.item||'Unknown';if(itemSold[k])itemSold[k].qty-=r.qty;});
   mkBars('item-bars',Object.values(itemSold).sort((a,b)=>b.qty-a.qty),'item','qty');
   mkBars('brand-bars',brs.slice(0,8),'brand','netSold');
 
-  // Insights
   const ins=[];
   const topItem=Object.values(itemSold).sort((a,b)=>b.qty-a.qty)[0];
   if(topItem) ins.push({i:'🔥',t:`${topItem.item} is your fastest selling item`,s:`${topItem.qty} net units sold`});
@@ -882,7 +882,7 @@ function renderInv() {
   document.getElementById('inv-body').innerHTML=f.slice(0,300).map(a=>`<tr>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
     <td style="font-weight:600">${a.item||'—'}</td>
-    <td>${a.supplier||'—'}</td>
+    <td>${a.supplier||a.brand||'—'}</td>
     <td>${a.size||'—'}</td>
     <td>${a.purchased}</td><td>${a.grossSold}</td>
     <td style="${a.returned>0?'color:var(--purple-m);font-weight:600':''}">${a.returned}</td>
@@ -917,7 +917,7 @@ function renderFM() {
   const srch=document.getElementById('fm-srch').value.toLowerCase();
   const f=arts.filter(a=>{
     if(catF&&(a.item||'')!==catF) return false;
-    if(brF&&(a.supplier||'')!==brF) return false;
+    if(brF&&(a.brand||a.supplier||'')!==brF) return false;
     if(srch&&!(a.lotNo||'').toLowerCase().includes(srch)&&!(a.item||'').toLowerCase().includes(srch)) return false;
     return a.netSold>0;
   });
@@ -925,7 +925,7 @@ function renderFM() {
     <td><div class="rk ${i<3?'r'+(i+1):'rn'}">${i+1}</div></td>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
     <td style="font-weight:600">${a.item||'—'}</td>
-    <td>${a.supplier||'—'}</td>
+    <td>${a.brand||a.supplier||'—'}</td>
     <td>${''}</td>
     <td>${a.size||'—'}</td>
     <td>${a.grossSold}</td>
@@ -1014,14 +1014,14 @@ function buildDead() {
   document.getElementById('ds-alerts').innerHTML=al.map(a=>`<div class="alert-r">⚠️ ${a}</div>`).join('');
 
   const supM={},itemM={};
-  dead.forEach(a=>{supM[a.supplier||'Unknown']=(supM[a.supplier||'Unknown']||0)+1;itemM[a.item||'Unknown']=(itemM[a.item||'Unknown']||0)+a.liveStock;});
+  dead.forEach(a=>{supM[a.supplier||a.brand||'Unknown']=(supM[a.supplier||a.brand||'Unknown']||0)+1;itemM[a.item||'Unknown']=(itemM[a.item||'Unknown']||0)+a.liveStock;});
   mkBars('ds-sup-bars',Object.entries(supM).sort((a,b)=>b[1]-a[1]).map(([s,n])=>({s,n})),'s','n',['#d85a30']);
   mkBars('ds-item-bars',Object.entries(itemM).sort((a,b)=>b[1]-a[1]).map(([item,n])=>({item,n})),'item','n',['#e89008']);
 
   document.getElementById('ds-body').innerHTML=dead.slice(0,100).map(a=>`<tr>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
     <td style="font-weight:600">${a.item||'—'}</td>
-    <td>${a.supplier||'—'}</td>
+    <td>${a.supplier||a.brand||'—'}</td>
     <td>${a.size||'—'}</td>
     <td style="font-weight:700">${a.liveStock}</td>
     <td>₹${Math.round(a.avgCost)}</td>
@@ -1039,7 +1039,12 @@ function renderPur() {
   const supF=document.getElementById('pur-sup').value;
   const itemF=document.getElementById('pur-item').value;
   const srch=document.getElementById('pur-srch').value.toLowerCase();
-  const f=G.purchase.filter(r=>(!supF||r.supplier===supF)&&(!itemF||r.item===itemF)&&(!srch||!(r.lotNo||'').toLowerCase().includes(srch)&&!(r.item||'').toLowerCase().includes(srch)?false:true));
+  const f=G.purchase.filter(r=>{
+    if(supF&&r.supplier!==supF) return false;
+    if(itemF&&r.item!==itemF) return false;
+    if(srch&&!(r.lotNo||'').toLowerCase().includes(srch)&&!(r.item||'').toLowerCase().includes(srch)) return false;
+    return true;
+  });
   document.getElementById('pur-body').innerHTML=f.slice(0,500).map(r=>`<tr>
     <td>${r.date||'—'}</td>
     <td>${r.supplier||'—'}</td>
@@ -1057,7 +1062,12 @@ function renderSal() {
   const catF=document.getElementById('sal-cat').value;
   const srch=document.getElementById('sal-srch').value.toLowerCase();
   const allSale=[...G.sale.map(r=>({...r,isReturn:false})),...G.returns.map(r=>({...r,isReturn:true}))];
-  const f=allSale.filter(r=>(!brF||(r.brand||'')=== brF)&&(!catF||(r.category||'')=== catF)&&(!srch||!(r.item||'').toLowerCase().includes(srch)&&!(r.lotNo||'').toLowerCase().includes(srch)?false:true));
+  const f=allSale.filter(r=>{
+    if(brF&&(r.brand||'')!==brF) return false;
+    if(catF&&(r.category||'')!==catF) return false;
+    if(srch&&!(r.item||'').toLowerCase().includes(srch)&&!(r.lotNo||'').toLowerCase().includes(srch)) return false;
+    return true;
+  });
   document.getElementById('sal-body').innerHTML=f.slice(0,500).map(r=>`<tr>
     <td>${r.date||'—'}</td>
     <td>${r.brand||'—'}</td>
@@ -1077,7 +1087,7 @@ function populateFilters() {
   const items=[...new Set(G.purchase.map(r=>r.item).filter(Boolean))].sort();
   const setOpts=(id,vals,label)=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option>${v}</option>`).join('');el.value=cur;};
   setOpts('inv-cat',cats,'All items');setOpts('inv-sup',sups,'All suppliers');
-  setOpts('fm-cat',cats,'All items');setOpts('fm-br',sups,'All suppliers');
+  setOpts('fm-cat',cats,'All items');setOpts('fm-br',brs,'All brands');
   setOpts('br-cat',[...new Set(G.sale.map(r=>r.category).filter(Boolean))].sort(),'All categories');
   setOpts('pur-sup',sups,'All suppliers');setOpts('pur-item',items,'All items');
   setOpts('sal-br',brs,'All brands');setOpts('sal-cat',[...new Set(G.sale.map(r=>r.category).filter(Boolean))].sort(),'All categories');
@@ -1088,7 +1098,6 @@ function populateFilters() {
 // ═══════════════════════════════════════════════════════
 function setThisWeek() {
   const today = new Date();
-  // Set to this Sunday (end of week)
   const day = today.getDay();
   const sunday = new Date(today);
   sunday.setDate(today.getDate() + (7 - day) % 7);
@@ -1110,12 +1119,11 @@ function buildWeekly() {
   document.getElementById('wk-sub').textContent =
     `Week: ${fmt(weekStart)} – ${fmt(weekEnd)}  |  Compared with previous week: ${fmt(lastStart)} – ${fmt(lastEnd)}`;
 
-  // Sales this week and last week per lot
   const thisWeek = {}, lastWeek = {};
   G.sale.forEach(r => {
     if (!r.date) return;
     const d = new Date(r.date + 'T00:00:00');
-    const k = (r.lotNo||r.item||'')+'|'+(r.item||'')+'|'+(r.brand||'')+'|'+(r.category||'')+'|'+(r.size||'');
+    const k = (r.lotNo||'')+'|'+(r.item||'')+'|'+(r.size||'');
     if (d >= weekStart && d <= weekEnd) {
       if (!thisWeek[k]) thisWeek[k] = { lotNo:r.lotNo, item:r.item, brand:r.brand, category:r.category, size:r.size, qty:0 };
       thisWeek[k].qty += r.qty;
@@ -1125,50 +1133,34 @@ function buildWeekly() {
       lastWeek[k].qty += r.qty;
     }
   });
-  // Subtract returns from this week
   G.returns.forEach(r => {
     if (!r.date) return;
     const d = new Date(r.date + 'T00:00:00');
-    const k = (r.lotNo||r.item||'')+'|'+(r.item||'')+'|'+(r.brand||r.supplier||'')+'|'+(r.category||'')+'|'+(r.size||'');
+    const k = (r.lotNo||'')+'|'+(r.item||'')+'|'+(r.size||'');
     if (d >= weekStart && d <= weekEnd && thisWeek[k]) thisWeek[k].qty = Math.max(0, thisWeek[k].qty - r.qty);
   });
 
   const arts = getArtStats();
-  const artMap = {};
+  const artByKey = {};
   arts.forEach(a => {
-    const k = (a.lotNo||a.item||'')+'|'+(a.item||'')+'|'+(a.supplier||'')+'|'+'|'+(a.size||'');
-    artMap[k] = a;
+    const k = (a.lotNo||'')+'|'+(a.item||'')+'|'+(a.size||'');
+    artByKey[k] = a;
   });
 
-  // Get live stock for each sold item
   const enriched = Object.entries(thisWeek).map(([k, tw]) => {
     const lw = lastWeek[k] || { qty:0 };
-    // Find matching art stat
-    const art = arts.find(a =>
-      (a.lotNo === tw.lotNo || a.item === tw.item) && (a.size === tw.size || !tw.size)
-    ) || { liveStock:0, avgCost:0, daysSince:0, purchased:0, netSold:0 };
-    const velocity = tw.qty / 7; // units per day this week
+    const art = artByKey[k] || { liveStock:0, avgCost:0, daysSince:0, purchased:0, netSold:0, supplier:tw.brand||'' };
+    const velocity = tw.qty / 7;
     const daysCover = velocity > 0 ? Math.floor(art.liveStock / velocity) : 999;
     return { ...tw, lw: lw.qty, art, velocity, daysCover };
   }).sort((a,b) => b.qty - a.qty);
 
-  // METRICS
   const totalSoldWk = enriched.reduce((s,r)=>s+r.qty,0);
   const totalSoldLw = enriched.reduce((s,r)=>s+r.lw,0);
   const urgentCount = enriched.filter(r=>r.daysCover<7&&r.art.liveStock<=5).length;
   const deadArts    = arts.filter(a=>a.daysSince>=90&&a.liveStock>0);
   const deadVal     = deadArts.reduce((s,a)=>s+a.stockVal,0);
 
-  setMG('wk-m',[
-    {l:'Total sold this week', v:totalSoldWk, s:totalSoldWk>totalSoldLw?'▲ up from last week':'▼ down from last week', c:totalSoldWk>=totalSoldLw?'up':'dn'},
-    {l:'Last week sales',      v:totalSoldLw},
-    {l:'Restock urgently',     v:urgentCount, s:'items critically low', c:urgentCount>0?'dn':'up'},
-    {l:'Dead stock items',     v:deadArts.length, s:'90+ days unsold', c:deadArts.length>0?'dn':'up'},
-    {l:'Dead stock value',     v:'₹'+Math.round(deadVal).toLocaleString('en-IN'), c:'dn'},
-    {l:'Unique items sold',    v:enriched.length},
-  ]);
-
-  // URGENT — low stock + selling fast
   const urgent = enriched.filter(r => r.art.liveStock <= 5 && r.qty >= 3);
   document.getElementById('wk-urgent').innerHTML = urgent.length === 0
     ? '<div style="font-size:12px;color:var(--green-m);font-weight:600;margin-bottom:8px">✓ No urgent restocks needed this week</div>'
@@ -1176,7 +1168,7 @@ function buildWeekly() {
   document.getElementById('wk-urgent-tbl').innerHTML = urgent.slice(0,20).map(r=>`<tr>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${r.lotNo||'—'}</td>
     <td style="font-weight:700">${r.item||'—'}</td>
-    <td>${r.brand||'—'}</td>
+    <td>${r.brand||r.art.supplier||'—'}</td>
     <td>${r.size||'—'}</td>
     <td style="font-weight:700;color:var(--green-m)">${r.qty}</td>
     <td style="font-weight:700;color:${r.art.liveStock===0?'var(--red-m)':'var(--amber-m)'}">${r.art.liveStock}</td>
@@ -1184,14 +1176,13 @@ function buildWeekly() {
     <td><span class="tag tr">Order Now</span></td>
   </tr>`).join('')||'<tr><td colspan="8" class="empty">None</td></tr>';
 
-  // RESTOCK SOON — stock 6-15, selling decently
   const soon = enriched.filter(r => r.art.liveStock > 5 && r.art.liveStock <= 15 && r.qty >= 2);
   document.getElementById('wk-soon-tbl').innerHTML = soon.slice(0,20).map(r=>{
     const trend = r.qty > r.lw ? `<span class="trend-up">▲ +${r.qty-r.lw}</span>` : r.qty < r.lw ? `<span class="trend-dn">▼ ${r.qty-r.lw}</span>` : '<span class="trend-eq">= same</span>';
     return `<tr>
       <td style="font-family:'DM Mono',monospace;font-size:10px">${r.lotNo||'—'}</td>
       <td style="font-weight:700">${r.item||'—'}</td>
-      <td>${r.brand||'—'}</td>
+      <td>${r.brand||r.art.supplier||'—'}</td>
       <td>${r.size||'—'}</td>
       <td style="font-weight:700;color:var(--green-m)">${r.qty}</td>
       <td>${r.lw}</td>
@@ -1201,7 +1192,6 @@ function buildWeekly() {
     </tr>`;
   }).join('')||'<tr><td colspan="9" class="empty">No items need restocking soon</td></tr>';
 
-  // FAST MOVERS THIS WEEK
   document.getElementById('wk-fast-tbl').innerHTML = enriched.slice(0,15).map((r,i)=>{
     const change = r.qty - r.lw;
     const trend = change > 0 ? `<span class="trend-up">▲ +${change}</span>` : change < 0 ? `<span class="trend-dn">▼ ${change}</span>` : '<span class="trend-eq">—</span>';
@@ -1218,17 +1208,16 @@ function buildWeekly() {
     </tr>`;
   }).join('')||'<tr><td colspan="9" class="empty">No sales this week — upload this week\'s sale file</td></tr>';
 
-  // SLOW MOVERS — in stock but sold 0-1 this week and 0-2 total
   const slow = arts.filter(a => {
-    const k = Object.keys(thisWeek).find(k => k.startsWith((a.lotNo||a.item||'')+'|'));
-    const soldThisWk = k ? thisWeek[k].qty : 0;
+    const k = (a.lotNo||'')+'|'+(a.item||'')+'|'+(a.size||'');
+    const soldThisWk = thisWeek[k] ? thisWeek[k].qty : 0;
     return a.liveStock > 0 && soldThisWk <= 1 && a.netSold <= 2 && a.daysSince > 14 && a.daysSince < 90;
   }).sort((a,b) => b.daysSince - a.daysSince);
 
   document.getElementById('wk-slow-tbl').innerHTML = slow.slice(0,20).map(a=>`<tr>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
     <td style="font-weight:700">${a.item||'—'}</td>
-    <td>${a.supplier||'—'}</td>
+    <td>${a.supplier||a.brand||'—'}</td>
     <td>${a.size||'—'}</td>
     <td>${a.purchased}</td>
     <td>${a.netSold}</td>
@@ -1237,7 +1226,6 @@ function buildWeekly() {
     <td><span class="tag ta">Moving Slow</span></td>
   </tr>`).join('')||'<tr><td colspan="9" class="empty">No slow movers — great!</td></tr>';
 
-  // DEAD STOCK
   document.getElementById('wk-dead-summary').innerHTML = deadArts.length > 0
     ? `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">
         <div style="padding:8px 14px;background:var(--red-l);border-radius:var(--r);font-size:12px;color:var(--red-m);font-weight:700">${deadArts.length} items unsold 90+ days</div>
@@ -1249,7 +1237,7 @@ function buildWeekly() {
   document.getElementById('wk-dead-tbl').innerHTML = deadArts.slice(0,30).map(a=>`<tr>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
     <td style="font-weight:700">${a.item||'—'}</td>
-    <td>${a.supplier||'—'}</td>
+    <td>${a.supplier||a.brand||'—'}</td>
     <td>${a.size||'—'}</td>
     <td style="font-weight:700">${a.liveStock}</td>
     <td>₹${Math.round(a.avgCost)}</td>
@@ -1258,22 +1246,21 @@ function buildWeekly() {
     <td><span class="tag ${a.daysSince>=180?'tr':a.daysSince>=120?'ta':'tgr'}">${a.daysSince>=180?'Clear Stock Now':a.daysSince>=120?'Discount 30%':'Discount 20%'}</span></td>
   </tr>`).join('')||'<tr><td colspan="9" class="empty">No dead stock</td></tr>';
 
-  // OVERSTOCK — purchased lot, sold less than 30%, still have big stock, been 14+ days
   const topItem = enriched[0];
   const topBrand = (() => {
     const bm = {}; enriched.forEach(r=>{bm[r.brand||'?']=(bm[r.brand||'?']||0)+r.qty;}); return Object.entries(bm).sort((a,b)=>b[1]-a[1])[0];
   })();
 
   const overstock = arts.filter(a => {
-    if (a.purchased < 5) return false;           // ignore tiny lots
-    if (a.liveStock < 3) return false;           // not overstock if almost gone
+    if (a.purchased < 5) return false;
+    if (a.liveStock < 3) return false;
     const sellPct = a.purchased > 0 ? (a.netSold / a.purchased) * 100 : 0;
-    return sellPct < 40 && a.daysSince > 14;     // sold less than 40% and 14+ days old
+    return sellPct < 40 && a.daysSince > 14;
   }).map(a => {
     const sellPct = a.purchased > 0 ? Math.round(a.netSold / a.purchased * 100) : 0;
     const weeksSold = a.netSold > 0 ? a.purchased / (a.netSold / Math.max(a.daysSince, 7) * 7) : 999;
     return { ...a, sellPct, weeksCover: Math.round(weeksSold) };
-  }).sort((a, b) => a.sellPct - b.sellPct); // worst first
+  }).sort((a, b) => a.sellPct - b.sellPct);
 
   const overstockVal = overstock.reduce((s, a) => s + a.stockVal, 0);
 
@@ -1295,7 +1282,7 @@ function buildWeekly() {
     return `<tr>
       <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo || '—'}</td>
       <td style="font-weight:700">${a.item || '—'}</td>
-      <td>${a.supplier || '—'}</td>
+      <td>${a.supplier || a.brand || '—'}</td>
       <td>${a.size || '—'}</td>
       <td>${a.purchased}</td>
       <td>${a.netSold}</td>
@@ -1307,7 +1294,6 @@ function buildWeekly() {
     </tr>`;
   }).join('') || '<tr><td colspan="11" class="empty">No overstock — great buying decisions!</td></tr>';
 
-  // Update metrics to include overstock
   setMG('wk-m',[
     {l:'Total sold this week', v:totalSoldWk, s:totalSoldWk>totalSoldLw?'▲ up from last week':'▼ down from last week', c:totalSoldWk>=totalSoldLw?'up':'dn'},
     {l:'Last week sales',      v:totalSoldLw},
@@ -1317,7 +1303,6 @@ function buildWeekly() {
     {l:'Dead stock value',     v:'₹'+Math.round(deadVal).toLocaleString('en-IN'), c:'dn'},
   ]);
 
-  // Update week summary to include overstock
   document.getElementById('wk-summary').innerHTML = `
     <div class="sum-grid">
       <div class="sum-box"><div class="sum-label">Top item this week</div><div class="sum-val" style="font-size:14px">${topItem?topItem.item||topItem.lotNo:'—'}</div><div class="sum-sub">${topItem?topItem.qty+' units sold':''}</div></div>
@@ -1327,12 +1312,8 @@ function buildWeekly() {
       <div class="sum-box"><div class="sum-label">Dead stock value</div><div class="sum-val" style="color:var(--red-m)">₹${Math.round(deadVal).toLocaleString('en-IN')}</div><div class="sum-sub">${deadArts.length} items blocked</div></div>
       <div class="sum-box"><div class="sum-label">Week vs last week</div><div class="sum-val" style="color:${totalSoldWk>=totalSoldLw?'var(--green-m)':'var(--red-m)'}">${totalSoldWk>=totalSoldLw?'▲':'▼'} ${Math.abs(totalSoldWk-totalSoldLw)} units</div><div class="sum-sub">${totalSoldWk} vs ${totalSoldLw} last week</div></div>
     </div>`;
-  // Week summary already set above with overstock included
 }
 
-// ═══════════════════════════════════════════════════════
-// TAB SWITCHING — handles all tabs including weekly
-// ═══════════════════════════════════════════════════════
 function sw(id, el) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.sb-item').forEach(s=>s.classList.remove('active'));
@@ -1344,7 +1325,7 @@ function sw(id, el) {
 }
 
 async function clearData(type) {
-  if(!confirm(`Permanently delete ALL ${type} data from Replit DB? This cannot be undone.`)) return;
+  if(!confirm(`Permanently delete ALL ${type} data? This cannot be undone.`)) return;
   await fetch('/api/data/'+type,{method:'DELETE'});
   await loadData();
   alert(type+' data cleared.');
