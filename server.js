@@ -1,84 +1,101 @@
 const express  = require('express');
 const session  = require('express-session');
+const MongoStore = require('connect-mongo');
 const multer   = require('multer');
 const XLSX     = require('xlsx');
 const path     = require('path');
-const fs       = require('fs');
+const { MongoClient } = require('mongodb');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// ── STORAGE — file-based (works on Render, Railway, Fly, etc.) ───────────────
-// Uses @replit/database ONLY if actually running on Replit (has REPLIT_DB_URL).
-// Otherwise, uses a simple data.json file on disk.
-const DATA_FILE = path.join(__dirname, 'data.json');
+// ── MONGODB CONNECTION ───────────────────────────────────────────────────────
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb+srv://paladmin:JAIMATADI@cluster0.yhza2if.mongodb.net/?appName=Cluster0';
+const DB_NAME   = 'palmenswear';
 
-let storage = null;
+let db = null;
 
-function loadFromFile() {
+async function connectDB() {
   try {
-    if (fs.existsSync(DATA_FILE)) {
-      const raw = fs.readFileSync(DATA_FILE, 'utf8');
-      return JSON.parse(raw);
+    const client = new MongoClient(MONGO_URI);
+    await client.connect();
+    db = client.db(DB_NAME);
+    console.log('✅ Connected to MongoDB Atlas — data is safe forever!');
+
+    // Create collections if they don't exist
+    const collections = await db.listCollections().toArray();
+    const names = collections.map(c => c.name);
+    if (!names.includes('purchases'))   await db.createCollection('purchases');
+    if (!names.includes('sales'))       await db.createCollection('sales');
+    if (!names.includes('returns'))     await db.createCollection('returns');
+    if (!names.includes('upload_logs')) await db.createCollection('upload_logs');
+
+    console.log('✅ Collections ready: purchases, sales, returns, upload_logs');
+  } catch (e) {
+    console.error('❌ MongoDB connection failed:', e.message);
+    process.exit(1);
+  }
+}
+
+// ── STORAGE HELPERS ──────────────────────────────────────────────────────────
+async function readAll(type) {
+  const collName = type === 'purchase' ? 'purchases' : type === 'sale' ? 'sales' : 'returns';
+  try {
+    return await db.collection(collName).find({}).toArray();
+  } catch (e) {
+    console.error('Read error:', e.message);
+    return [];
+  }
+}
+
+async function appendRows(type, rows) {
+  const collName = type === 'purchase' ? 'purchases' : type === 'sale' ? 'sales' : 'returns';
+  try {
+    if (rows.length > 0) {
+      await db.collection(collName).insertMany(rows);
     }
   } catch (e) {
-    console.error('Error reading data.json:', e.message);
+    console.error('Append error:', e.message);
   }
-  return {};
 }
 
-function saveToFile(data) {
+async function clearAll(type) {
+  const collName = type === 'purchase' ? 'purchases' : type === 'sale' ? 'sales' : 'returns';
   try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-    return true;
+    await db.collection(collName).deleteMany({});
   } catch (e) {
-    console.error('Error writing data.json:', e.message);
-    return false;
+    console.error('Clear error:', e.message);
   }
 }
 
-// Initialize file-based storage
-const fileData = loadFromFile();
-storage = {
-  get: async (k) => fileData[k] !== undefined ? fileData[k] : null,
-  set: async (k, v) => { fileData[k] = v; saveToFile(fileData); },
-  delete: async (k) => { delete fileData[k]; saveToFile(fileData); },
-};
-console.log('✅ File-based storage ready (data.json)');
-
-// ── Storage helpers ──────────────────────────────────────────────────────────
-const CHUNK = 500;
-async function dbGet(k)    { try { const v = await storage.get(k); return v ?? null; } catch { return null; } }
-async function dbSet(k, v) { try { await storage.set(k, v); } catch(e) { console.error('Storage set error:', e.message); } }
-async function dbDel(k)    { try { await storage.delete(k); } catch {} }
-
-async function readAll(type) {
-  const meta = await dbGet('meta_' + type);
-  if (!meta) return [];
-  const out = [];
-  for (let i = 0; i < meta.chunks; i++) {
-    const c = await dbGet(type + '_' + i);
-    if (c) out.push(...c);
+async function getUploadLogs() {
+  try {
+    return await db.collection('upload_logs').find({}).sort({ at: -1 }).limit(200).toArray();
+  } catch (e) {
+    return [];
   }
-  return out;
 }
-async function writeAll(type, arr) {
-  const old = await dbGet('meta_' + type);
-  if (old) for (let i = 0; i < old.chunks; i++) await dbDel(type + '_' + i);
-  const nc = Math.max(1, Math.ceil(arr.length / CHUNK));
-  for (let i = 0; i < nc; i++) await dbSet(type + '_' + i, arr.slice(i * CHUNK, (i + 1) * CHUNK));
-  await dbSet('meta_' + type, { chunks: nc, total: arr.length, updated: new Date().toISOString() });
-}
-async function appendRows(type, rows) {
-  const existing = await readAll(type);
-  await writeAll(type, [...existing, ...rows]);
+
+async function addUploadLog(log) {
+  try {
+    await db.collection('upload_logs').insertOne(log);
+    // Keep only last 200 logs
+    const count = await db.collection('upload_logs').countDocuments();
+    if (count > 200) {
+      const oldest = await db.collection('upload_logs').find({}).sort({ at: 1 }).limit(count - 200).toArray();
+      const ids = oldest.map(o => o._id);
+      await db.collection('upload_logs').deleteMany({ _id: { $in: ids } });
+    }
+  } catch (e) {
+    console.error('Log error:', e.message);
+  }
 }
 
 // ── USERS ────────────────────────────────────────────────────────────────────
 const USERS = {
-  owner:   { password: 'owner123',   role: 'owner',   name: 'Owner'   },
-  manager: { password: 'manager123', role: 'manager', name: 'Manager' },
-  staff:   { password: 'staff123',   role: 'staff',   name: 'Staff'   },
+  owner:   { password: process.env.OWNER_PASS   || 'owner123',   role: 'owner',   name: 'Owner'   },
+  manager: { password: process.env.MANAGER_PASS || 'manager123', role: 'manager', name: 'Manager' },
+  staff:   { password: process.env.STAFF_PASS   || 'staff123',   role: 'staff',   name: 'Staff'   },
 };
 
 // ── Middleware ────────────────────────────────────────────────────────────────
@@ -87,9 +104,15 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('trust proxy', 1);
 app.use(session({
-  secret: 'palmenswear-ims-2026',
+  secret: process.env.SESSION_SECRET || 'palmenswear-ims-2026',
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: MONGO_URI,
+    dbName: DB_NAME,
+    collectionName: 'sessions',
+    ttl: 12 * 60 * 60, // 12 hours
+  }),
   cookie: {
     maxAge: 12 * 60 * 60 * 1000,
     secure: false,
@@ -346,8 +369,7 @@ app.post('/api/upload/:type', auth(['owner', 'staff']), upload.single('file'), a
         return res.status(400).json({ error: 'No valid rows found in sale file.' });
     }
 
-    const logs = await dbGet('upload_logs') || [];
-    logs.unshift({
+    await addUploadLog({
       type,
       filename:     req.file.originalname,
       purchaseRows,
@@ -357,7 +379,6 @@ app.post('/api/upload/:type', auth(['owner', 'staff']), upload.single('file'), a
       role: req.session.user.role,
       at:  new Date().toISOString(),
     });
-    await dbSet('upload_logs', logs.slice(0, 200));
 
     res.json({
       success: true,
@@ -379,25 +400,39 @@ app.get('/api/data', auth(['owner', 'manager']), async (req, res) => {
   const [purchase, sale, returns] = await Promise.all([
     readAll('purchase'), readAll('sale'), readAll('returns')
   ]);
-  res.json({ purchase, sale, returns });
+  // Remove MongoDB _id from response to keep frontend compatible
+  const clean = arr => arr.map(({ _id, ...rest }) => rest);
+  res.json({ purchase: clean(purchase), sale: clean(sale), returns: clean(returns) });
 });
 
 app.get('/api/uploads', auth(['owner', 'manager']), async (req, res) => {
-  res.json(await dbGet('upload_logs') || []);
+  const logs = await getUploadLogs();
+  const clean = logs.map(({ _id, ...rest }) => rest);
+  res.json(clean);
 });
 
 app.get('/api/meta', auth(['owner', 'manager']), async (req, res) => {
-  const [pm, sm, rm] = await Promise.all([
-    dbGet('meta_purchase'), dbGet('meta_sale'), dbGet('meta_returns')
-  ]);
-  res.json({ purchase: pm, sale: sm, returns: rm });
+  try {
+    const [pCount, sCount, rCount] = await Promise.all([
+      db.collection('purchases').countDocuments(),
+      db.collection('sales').countDocuments(),
+      db.collection('returns').countDocuments(),
+    ]);
+    res.json({
+      purchase: { total: pCount, updated: new Date().toISOString() },
+      sale:     { total: sCount, updated: new Date().toISOString() },
+      returns:  { total: rCount, updated: new Date().toISOString() },
+    });
+  } catch (e) {
+    res.json({ purchase: null, sale: null, returns: null });
+  }
 });
 
 app.delete('/api/data/:type', auth(['owner']), async (req, res) => {
   const type = req.params.type;
   if (!['purchase','sale','returns'].includes(type))
     return res.status(400).json({ error: 'Invalid type' });
-  await writeAll(type, []);
+  await clearAll(type);
   res.json({ success: true });
 });
 
@@ -405,7 +440,9 @@ app.delete('/api/data/:type', auth(['owner']), async (req, res) => {
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // ── START ─────────────────────────────────────────────────────────────────────
-app.listen(PORT, '0.0.0.0', () => console.log(`✅ PAL MENS WEAR IMS running on port ${PORT}`));
+connectDB().then(() => {
+  app.listen(PORT, '0.0.0.0', () => console.log(`✅ PAL MENS WEAR IMS running on port ${PORT}`));
+});
 
 // Prevent crashes from unhandled errors
 process.on('uncaughtException', (err) => {
