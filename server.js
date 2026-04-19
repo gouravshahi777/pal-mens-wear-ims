@@ -61,11 +61,11 @@ async function appendRows(type, rows) {
 
 // ── DUPLICATE DETECTION ──────────────────────────────────────────────────────
 function makePurchaseKey(r) {
-  return [r.date||'', r.item||'', r.lotNo||'', r.supplier||'', r.size||'', r.shade||'', r.qty||0].join('|').toLowerCase();
+  return [r.date||'', r.billNo||'', r.item||'', r.lotNo||'', r.supplier||'', r.size||'', r.shade||'', r.qty||0].join('|').toLowerCase();
 }
 
 function makeSaleKey(r) {
-  return [r.date||'', r.item||'', r.lotNo||'', r.brand||'', r.size||'', r.shade||'', r.qty||0].join('|').toLowerCase();
+  return [r.date||'', r.sno||'', r.item||'', r.lotNo||'', r.brand||'', r.size||'', r.shade||'', r.qty||0].join('|').toLowerCase();
 }
 
 async function appendRowsDedup(type, rows) {
@@ -323,6 +323,7 @@ function parseSale(buffer) {
   const iQty     = findCol(['SALE QTY', 'SALE QUANTITY']);
   const iShade   = findCol(['SHADE NAME']);
   const iLot     = findCol(['LOT NUMBER', 'LOT NO']);
+  const iSno     = findCol(['SNO.', 'SNO', 'S.NO', 'S.NO.']);
 
   if (iDate === -1 || iCompany === -1 || iQty === -1)
     throw new Error('Missing required columns: BILL DATE, COMPANY NAME, SALE QTY');
@@ -344,6 +345,7 @@ function parseSale(buffer) {
     const absQty = Math.abs(qty);
     const rowBase = {
       date:     dateStr,
+      sno:      String(snoNum),
       agent:    String(iAgent   >= 0 ? r[iAgent]   || '' : '').trim(),
       brand:    String(iCompany >= 0 ? r[iCompany] || '' : '').trim(),
       category: String(iCat     >= 0 ? r[iCat]     || '' : '').trim(),
