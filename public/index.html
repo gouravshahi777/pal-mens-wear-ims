@@ -585,7 +585,8 @@ async function doUpload(input, type, statId) {
       let msg = '✓ File uploaded — ';
       if (type==='purchase') msg += d.purchaseRows+' purchase rows saved';
       else msg += d.saleRows+' sale rows'+(d.convertedRows?' + '+d.convertedRows+' auto-converted rows':'')+' saved';
-      st.className='up-stat st-ok'; st.textContent=msg;
+      if (d.skippedRows) msg += ' | ⚠️ '+d.skippedRows+' duplicate rows skipped';
+      st.className='up-stat '+(d.skippedRows>0?'st-loading':'st-ok'); st.textContent=msg;
       if (currentRole!=='staff') { loadData(); loadUlog(); }
     } else {
       st.className='up-stat st-err'; st.textContent='✗ Error: '+(d.error||'Upload failed');
