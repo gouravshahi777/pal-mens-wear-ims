@@ -61,11 +61,11 @@ async function appendRows(type, rows) {
 
 // ── DUPLICATE DETECTION ──────────────────────────────────────────────────────
 function makePurchaseKey(r) {
-  return [r.date||'', r.item||'', r.lotNo||'', r.supplier||'', r.qty||0].join('|').toLowerCase();
+  return [r.date||'', r.item||'', r.lotNo||'', r.supplier||'', r.size||'', r.shade||'', r.qty||0].join('|').toLowerCase();
 }
 
 function makeSaleKey(r) {
-  return [r.date||'', r.item||'', r.lotNo||'', r.brand||'', r.qty||0].join('|').toLowerCase();
+  return [r.date||'', r.item||'', r.lotNo||'', r.brand||'', r.size||'', r.shade||'', r.qty||0].join('|').toLowerCase();
 }
 
 async function appendRowsDedup(type, rows) {
