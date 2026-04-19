@@ -6,6 +6,7 @@
 <title>PAL MENS WEAR — IMS</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{
   --bg:#f5f4f0;--surf:#fff;--surf2:#efede7;--border:#e0ddd4;
@@ -272,7 +273,7 @@ tbody tr:hover td{background:var(--bg)}
         <div class="pg-sub">Real stock = Purchased − Net Sold (returns added back automatically)</div>
         <div class="mg" id="inv-m"></div>
         <div class="card">
-          <div class="ct">All articles — current stock</div>
+          <div class="ct" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">All articles — current stock <div><button class="btn-prim" onclick="exportExcel('inventory','filtered')" style="font-size:11px;padding:5px 10px">📥 Export Filtered</button> <button class="btn-prim" onclick="exportExcel('inventory','all')" style="font-size:11px;padding:5px 10px;background:var(--green)">📥 Export All</button></div></div>
           <div class="frow">
             <select class="fs" id="inv-cat" onchange="renderInv()"><option value="">All items</option></select>
             <select class="fs" id="inv-sup" onchange="renderInv()"><option value="">All suppliers</option></select>
@@ -312,6 +313,8 @@ tbody tr:hover td{background:var(--bg)}
           </select>
           <input class="fsrch" id="ro-srch" placeholder="Search item / lot no..." oninput="renderReorder()">
           <button class="btn-prim" onclick="window.print()">🖨️ Print</button>
+          <button class="btn-prim" onclick="exportExcel('reorder','filtered')" style="background:var(--blue)">📥 Export Filtered</button>
+          <button class="btn-prim" onclick="exportExcel('reorder','all')" style="background:var(--green)">📥 Export All</button>
         </div>
         <div class="mg" id="ro-m"></div>
         <div class="card">
@@ -1350,6 +1353,108 @@ function sw(id, el) {
   if(el) el.classList.add('active');
   if(id==='upload') loadUlog();
   if(id==='weekly') setThisWeek();
+}
+
+// ═══════ EXPORT TO EXCEL ═══════
+function exportExcel(tab, mode) {
+  const arts = getArtStats();
+  let data = [];
+  let filename = '';
+
+  if (tab === 'inventory') {
+    let items = arts.sort((a,b)=>b.liveStock-a.liveStock);
+    if (mode === 'filtered') {
+      const catF = document.getElementById('inv-cat').value;
+      const supF = document.getElementById('inv-sup').value;
+      const brF = document.getElementById('inv-brand').value;
+      const stkF = document.getElementById('inv-stk').value;
+      const srch = document.getElementById('inv-srch').value.toLowerCase();
+      items = items.filter(a => {
+        if (catF && (a.item||'') !== catF) return false;
+        if (supF && (a.supplier||'') !== supF) return false;
+        if (brF && (a.brand||'') !== brF) return false;
+        if (stkF === 'out' && a.liveStock !== 0) return false;
+        if (stkF === 'low' && (a.liveStock < 1 || a.liveStock > 5)) return false;
+        if (stkF === 'ok' && a.liveStock < 6) return false;
+        if (srch && !(a.lotNo||'').toLowerCase().includes(srch) && !(a.item||'').toLowerCase().includes(srch)) return false;
+        return true;
+      });
+    }
+    data = items.map(a => ({
+      'Lot No': a.lotNo || '',
+      'Item': a.item || '',
+      'Brand': a.brand || '',
+      'Supplier': a.supplier || '',
+      'Size': a.size || '',
+      'Purchased': a.purchased,
+      'Sold': a.grossSold,
+      'Returned': a.returned,
+      'Live Stock': a.liveStock,
+      'Avg Cost': Math.round(a.avgCost),
+      'Stock Value': Math.round(a.stockVal),
+      'Status': a.liveStock === 0 ? 'Out of Stock' : a.liveStock <= 5 ? 'Low Stock' : 'In Stock'
+    }));
+    filename = 'PAL_LiveInventory_' + (mode === 'filtered' ? 'Filtered_' : '') + new Date().toISOString().split('T')[0] + '.xlsx';
+  }
+
+  if (tab === 'reorder') {
+    const days = parseInt(document.getElementById('ro-days').value) || 30;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+
+    let reorderItems = arts.filter(a => {
+      if (a.purchased <= 0) return false;
+      if (!a.saleDates.length) return false;
+      return a.saleDates.some(s => s.date >= cutoff);
+    }).map(a => {
+      const soldInPeriod = a.saleDates.filter(s => s.date >= cutoff).reduce((sum,s) => sum + s.qty, 0);
+      let reorderMultiplier = 1;
+      let speedClass = 'fast';
+      if (a.daysToSell !== null && a.daysToSell <= 10) { reorderMultiplier = 2; speedClass = 'super'; }
+      else if (a.daysToSell !== null && a.daysToSell <= 30) { reorderMultiplier = 1; speedClass = 'fast'; }
+      return { ...a, soldInPeriod, reorderMultiplier, speedClass, reorderQty: a.purchased * reorderMultiplier };
+    }).sort((a,b) => b.soldInPeriod - a.soldInPeriod);
+
+    if (mode === 'filtered') {
+      const brF = document.getElementById('ro-brand').value;
+      const supF = document.getElementById('ro-sup').value;
+      const speedF = document.getElementById('ro-speed').value;
+      const srch = document.getElementById('ro-srch').value.toLowerCase();
+      reorderItems = reorderItems.filter(r => {
+        if (brF && (r.brand||'') !== brF) return false;
+        if (supF && (r.supplier||'') !== supF) return false;
+        if (speedF && r.speedClass !== speedF) return false;
+        if (srch && !(r.lotNo||'').toLowerCase().includes(srch) && !(r.item||'').toLowerCase().includes(srch)) return false;
+        return true;
+      });
+    }
+
+    data = reorderItems.map(r => ({
+      'Lot No': r.lotNo || '',
+      'Item': r.item || '',
+      'Brand': r.brand || '',
+      'Supplier': r.supplier || '',
+      'Size': r.size || '',
+      'Purchased': r.purchased,
+      'Total Sold': r.netSold,
+      'Sold in Period': r.soldInPeriod,
+      'Days to Sell': r.daysToSell !== null ? r.daysToSell : '',
+      'Live Stock': r.liveStock,
+      'Speed': r.speedClass === 'super' ? 'Super Fast (2x)' : 'Fast (1x)',
+      'Reorder Qty': r.reorderQty
+    }));
+    filename = 'PAL_ReorderSheet_' + days + 'days_' + (mode === 'filtered' ? 'Filtered_' : '') + new Date().toISOString().split('T')[0] + '.xlsx';
+  }
+
+  if (data.length === 0) { alert('No data to export!'); return; }
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  // Auto-size columns
+  const colWidths = Object.keys(data[0]).map(k => ({ wch: Math.max(k.length, ...data.slice(0,50).map(r => String(r[k]||'').length)) + 2 }));
+  ws['!cols'] = colWidths;
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, tab === 'inventory' ? 'Live Inventory' : 'Reorder Sheet');
+  XLSX.writeFile(wb, filename);
 }
 
 async function clearData(type) {
