@@ -59,6 +59,52 @@ async function appendRows(type, rows) {
   }
 }
 
+// ── DUPLICATE DETECTION ──────────────────────────────────────────────────────
+function makePurchaseKey(r) {
+  return [r.date||'', r.item||'', r.lotNo||'', r.supplier||'', r.qty||0].join('|').toLowerCase();
+}
+
+function makeSaleKey(r) {
+  return [r.date||'', r.item||'', r.lotNo||'', r.brand||'', r.qty||0].join('|').toLowerCase();
+}
+
+async function appendRowsDedup(type, rows) {
+  const collName = type === 'purchase' ? 'purchases' : type === 'sale' ? 'sales' : 'returns';
+  try {
+    if (rows.length === 0) return { added: 0, skipped: 0 };
+
+    // Get existing rows from DB
+    const existing = await db.collection(collName).find({}).toArray();
+
+    // Build set of existing keys
+    const existingKeys = new Set();
+    const keyFn = type === 'purchase' ? makePurchaseKey : makeSaleKey;
+    existing.forEach(r => existingKeys.add(keyFn(r)));
+
+    // Filter out duplicates
+    const newRows = [];
+    let skipped = 0;
+    for (const row of rows) {
+      const key = keyFn(row);
+      if (existingKeys.has(key)) {
+        skipped++;
+      } else {
+        newRows.push(row);
+        existingKeys.add(key); // prevent duplicates within same file too
+      }
+    }
+
+    if (newRows.length > 0) {
+      await db.collection(collName).insertMany(newRows);
+    }
+
+    return { added: newRows.length, skipped };
+  } catch (e) {
+    console.error('Append dedup error:', e.message);
+    return { added: 0, skipped: 0 };
+  }
+}
+
 async function clearAll(type) {
   const collName = type === 'purchase' ? 'purchases' : type === 'sale' ? 'sales' : 'returns';
   try {
@@ -349,23 +395,35 @@ app.post('/api/upload/:type', auth(['owner', 'staff']), upload.single('file'), a
     return res.status(400).json({ error: 'No file uploaded' });
 
   try {
-    let purchaseRows = 0, saleRows = 0, convertedRows = 0;
+    let purchaseRows = 0, saleRows = 0, convertedRows = 0, skippedRows = 0;
 
     if (type === 'purchase') {
       const result = parsePurchase(req.file.buffer);
-      if (result.purchases.length) await appendRows('purchase', result.purchases);
-      if (result.salesFromPurchase.length) await appendRows('sale', result.salesFromPurchase);
-      purchaseRows  = result.purchases.length;
-      convertedRows = result.salesFromPurchase.length;
-      if (!purchaseRows && !convertedRows)
+      if (result.purchases.length) {
+        const r = await appendRowsDedup('purchase', result.purchases);
+        purchaseRows = r.added;
+        skippedRows += r.skipped;
+      }
+      if (result.salesFromPurchase.length) {
+        const r = await appendRowsDedup('sale', result.salesFromPurchase);
+        convertedRows = r.added;
+        skippedRows += r.skipped;
+      }
+      if (!purchaseRows && !convertedRows && !skippedRows)
         return res.status(400).json({ error: 'No valid rows found in purchase file.' });
     } else {
       const result = parseSale(req.file.buffer);
-      if (result.sales.length) await appendRows('sale', result.sales);
-      if (result.purchasesFromSale.length) await appendRows('purchase', result.purchasesFromSale);
-      saleRows      = result.sales.length;
-      convertedRows = result.purchasesFromSale.length;
-      if (!saleRows && !convertedRows)
+      if (result.sales.length) {
+        const r = await appendRowsDedup('sale', result.sales);
+        saleRows = r.added;
+        skippedRows += r.skipped;
+      }
+      if (result.purchasesFromSale.length) {
+        const r = await appendRowsDedup('purchase', result.purchasesFromSale);
+        convertedRows = r.added;
+        skippedRows += r.skipped;
+      }
+      if (!saleRows && !convertedRows && !skippedRows)
         return res.status(400).json({ error: 'No valid rows found in sale file.' });
     }
 
@@ -375,19 +433,23 @@ app.post('/api/upload/:type', auth(['owner', 'staff']), upload.single('file'), a
       purchaseRows,
       saleRows,
       convertedRows,
+      skippedRows,
       by:  req.session.user.name,
       role: req.session.user.role,
       at:  new Date().toISOString(),
     });
+
+    let message = '';
+    if (skippedRows > 0) message += `${skippedRows} duplicate row(s) skipped. `;
+    if (convertedRows > 0) message += `${convertedRows} row(s) auto-converted (negative qty flipped). `;
 
     res.json({
       success: true,
       purchaseRows,
       saleRows,
       convertedRows,
-      message: convertedRows > 0
-        ? `${convertedRows} row(s) auto-converted (negative qty flipped to opposite side)`
-        : undefined,
+      skippedRows,
+      message: message || undefined,
     });
   } catch (e) {
     console.error('Upload error:', e);
