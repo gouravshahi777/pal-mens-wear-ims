@@ -414,18 +414,20 @@ app.post('/api/upload/:type', auth(['owner', 'staff']), upload.single('file'), a
       if (!purchaseRows && !convertedRows && !skippedRows)
         return res.status(400).json({ error: 'No valid rows found in purchase file.' });
     } else {
+      // For sale files: no row-level dedup (same item can sell multiple times)
+      // Instead, check if this exact filename was already uploaded
+      const logs = await getUploadLogs();
+      const alreadyUploaded = logs.some(l => l.type === 'sale' && l.filename === req.file.originalname);
+      if (alreadyUploaded) {
+        return res.status(400).json({ error: `This file "${req.file.originalname}" was already uploaded before. If this is a new file, please rename it and try again.` });
+      }
+
       const result = parseSale(req.file.buffer);
-      if (result.sales.length) {
-        const r = await appendRowsDedup('sale', result.sales);
-        saleRows = r.added;
-        skippedRows += r.skipped;
-      }
-      if (result.purchasesFromSale.length) {
-        const r = await appendRowsDedup('purchase', result.purchasesFromSale);
-        convertedRows = r.added;
-        skippedRows += r.skipped;
-      }
-      if (!saleRows && !convertedRows && !skippedRows)
+      if (result.sales.length) await appendRows('sale', result.sales);
+      if (result.purchasesFromSale.length) await appendRows('purchase', result.purchasesFromSale);
+      saleRows      = result.sales.length;
+      convertedRows = result.purchasesFromSale.length;
+      if (!saleRows && !convertedRows)
         return res.status(400).json({ error: 'No valid rows found in sale file.' });
     }
 
