@@ -372,6 +372,7 @@ tbody tr:hover td{background:var(--bg)}
         <div class="card">
           <div class="ct">Fast mover table</div>
           <div class="frow">
+            <select class="fs" id="fm-month" onchange="renderFM()"><option value="">All months</option></select>
             <select class="fs" id="fm-cat" onchange="renderFM()"><option value="">All items</option></select>
             <select class="fs" id="fm-br" onchange="renderFM()"><option value="">All brands</option></select>
             <input class="fsrch" id="fm-srch" placeholder="Search item / lot no..." oninput="renderFM()">
@@ -380,6 +381,7 @@ tbody tr:hover td{background:var(--bg)}
             <thead><tr><th>#</th><th>Lot No.</th><th>Item</th><th>Brand</th><th>Size</th><th>Gross Sold</th><th>Returned</th><th>Net Sold</th><th>Speed</th></tr></thead>
             <tbody id="fm-body"></tbody>
           </table></div>
+          <div id="fm-count" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
         </div>
       </div>
 
@@ -1069,44 +1071,105 @@ function renderSupplierStock() {
 }
 
 function buildFastMovers() {
-  const arts=getArtStats().sort((a,b)=>b.netSold-a.netSold);
-  const top=arts[0];
-  setMG('fm-m',[
-    {l:'Top lot no.',     v:top?top.lotNo||top.item:'—', s:top?top.item:''},
-    {l:'Super fast items',v:arts.filter(a=>a.netSold>10).length},
-    {l:'Total items sold',v:[...new Set(G.sale.map(r=>r.lotNo||r.item))].length},
-    {l:'Avg return rate', v:G.sale.reduce((s,r)=>s+r.qty,0)>0?Math.round(G.returns.reduce((s,r)=>s+r.qty,0)/G.sale.reduce((s,r)=>s+r.qty,0)*100)+'%':'0%'},
+  // Populate month filter
+  const months = {};
+  G.sale.forEach(r => {
+    if (!r.date) return;
+    const k = r.date.substring(0, 7); // YYYY-MM
+    if (!months[k]) {
+      const d = new Date(r.date + 'T00:00:00');
+      months[k] = d.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+    }
+  });
+  const sortedMonths = Object.entries(months).sort((a, b) => b[0].localeCompare(a[0]));
+  const monthEl = document.getElementById('fm-month');
+  if (monthEl) {
+    const cur = monthEl.value;
+    monthEl.innerHTML = '<option value="">All months</option>' + sortedMonths.map(([k, label]) => `<option value="${k}">${label}</option>`).join('');
+    monthEl.value = cur;
+  }
+
+  const arts = getArtStats().sort((a, b) => b.netSold - a.netSold);
+  const top = arts[0];
+  setMG('fm-m', [
+    { l: 'Top lot no.', v: top ? top.lotNo || top.item : '—', s: top ? top.item : '' },
+    { l: 'Super fast items', v: arts.filter(a => a.netSold > 10).length },
+    { l: 'Total items sold', v: [...new Set(G.sale.map(r => r.lotNo || r.item))].length },
+    { l: 'Avg return rate', v: G.sale.reduce((s, r) => s + r.qty, 0) > 0 ? Math.round(G.returns.reduce((s, r) => s + r.qty, 0) / G.sale.reduce((s, r) => s + r.qty, 0) * 100) + '%' : '0%' },
   ]);
-  mkBars('fm-bars',arts.slice(0,8).map(a=>({label:(a.lotNo||a.item||'').substring(0,20),qty:a.netSold})),'label','qty');
-  const cats={};
-  G.sale.forEach(r=>{const k=r.item||'Unknown';if(!cats[k])cats[k]={item:k,qty:0};cats[k].qty+=r.qty;});
-  G.returns.forEach(r=>{const k=r.item||'Unknown';if(cats[k])cats[k].qty-=r.qty;});
-  mkBars('cat-bars2',Object.values(cats).sort((a,b)=>b.qty-a.qty),'item','qty');
+  mkBars('fm-bars', arts.slice(0, 8).map(a => ({ label: (a.lotNo || a.item || '').substring(0, 20), qty: a.netSold })), 'label', 'qty');
+  const cats = {};
+  G.sale.forEach(r => { const k = r.item || 'Unknown'; if (!cats[k]) cats[k] = { item: k, qty: 0 }; cats[k].qty += r.qty; });
+  G.returns.forEach(r => { const k = r.item || 'Unknown'; if (cats[k]) cats[k].qty -= r.qty; });
+  mkBars('cat-bars2', Object.values(cats).sort((a, b) => b.qty - a.qty), 'item', 'qty');
   renderFM();
 }
 
 function renderFM() {
-  const arts=getArtStats().sort((a,b)=>b.netSold-a.netSold);
-  const catF=document.getElementById('fm-cat').value;
-  const brF=document.getElementById('fm-br').value;
-  const srch=document.getElementById('fm-srch').value.toLowerCase();
-  const f=arts.filter(a=>{
-    if(catF&&(a.item||'')!==catF) return false;
-    if(brF&&(a.brand||a.supplier||'')!==brF) return false;
-    if(srch&&!(a.lotNo||'').toLowerCase().includes(srch)&&!(a.item||'').toLowerCase().includes(srch)) return false;
-    return a.netSold>0;
+  const monthF = document.getElementById('fm-month').value;
+  const catF = document.getElementById('fm-cat').value;
+  const brF = document.getElementById('fm-br').value;
+  const srch = document.getElementById('fm-srch').value.toLowerCase();
+
+  let arts;
+  if (monthF) {
+    // Build stats for selected month only
+    const m = {};
+    G.sale.forEach(r => {
+      if (!r.date || r.date.substring(0, 7) !== monthF) return;
+      const k = (r.lotNo || '') + '|' + (r.item || '') + '|' + (r.size || '');
+      if (!m[k]) m[k] = { lotNo: r.lotNo, item: r.item, brand: r.brand || '', size: r.size, grossSold: 0, returned: 0 };
+      m[k].grossSold += r.qty;
+      if (!m[k].brand && r.brand) m[k].brand = r.brand;
+    });
+    G.returns.forEach(r => {
+      if (!r.date || r.date.substring(0, 7) !== monthF) return;
+      const k = (r.lotNo || '') + '|' + (r.item || '') + '|' + (r.size || '');
+      if (m[k]) m[k].returned += r.qty;
+    });
+    // Add supplier info from purchase data
+    const supMap = {};
+    G.purchase.forEach(r => {
+      const k = (r.lotNo || '') + '|' + (r.item || '') + '|' + (r.size || '');
+      if (!supMap[k]) supMap[k] = r.supplier || r.brand || '';
+    });
+    arts = Object.values(m).map(a => {
+      a.netSold = Math.max(0, a.grossSold - a.returned);
+      const k = (a.lotNo || '') + '|' + (a.item || '') + '|' + (a.size || '');
+      if (!a.brand && supMap[k]) a.brand = supMap[k];
+      a.saleDates = [];
+      return a;
+    }).sort((a, b) => b.netSold - a.netSold);
+  } else {
+    arts = getArtStats().sort((a, b) => b.netSold - a.netSold);
+  }
+
+  const f = arts.filter(a => {
+    if (catF && (a.item || '') !== catF) return false;
+    if (brF && (a.brand || a.supplier || '') !== brF) return false;
+    if (srch && !(a.lotNo || '').toLowerCase().includes(srch) && !(a.item || '').toLowerCase().includes(srch)) return false;
+    return a.netSold > 0;
   });
-  document.getElementById('fm-body').innerHTML=f.slice(0,100).map((a,i)=>`<tr>
-    <td><div class="rk ${i<3?'r'+(i+1):'rn'}">${i+1}</div></td>
-    <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
-    <td style="font-weight:600">${a.item||'—'}</td>
-    <td>${a.brand||a.supplier||'—'}</td>
-    <td>${a.size||'—'}</td>
+
+  const totalNetSold = f.reduce((s, a) => s + a.netSold, 0);
+
+  document.getElementById('fm-body').innerHTML = f.slice(0, 200).map((a, i) => `<tr>
+    <td><div class="rk ${i < 3 ? 'r' + (i + 1) : 'rn'}">${i + 1}</div></td>
+    <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo || '—'}</td>
+    <td style="font-weight:600">${a.item || '—'}</td>
+    <td>${a.brand || a.supplier || '—'}</td>
+    <td>${a.size || '—'}</td>
     <td>${a.grossSold}</td>
-    <td style="${a.returned>0?'color:var(--purple-m);font-weight:600':''}">${a.returned}</td>
+    <td style="${a.returned > 0 ? 'color:var(--purple-m);font-weight:600' : ''}">${a.returned}</td>
     <td style="font-weight:700">${a.netSold}</td>
-    <td>${avgDayTag(a)}</td>
-  </tr>`).join('')||noData(9);
+    <td>${monthF ? '' : avgDayTag(a)}</td>
+  </tr>`).join('') || noData(9);
+
+  const countEl = document.getElementById('fm-count');
+  if (countEl) {
+    const monthLabel = monthF ? document.getElementById('fm-month').selectedOptions[0].text : 'All time';
+    countEl.innerHTML = `${monthLabel} · ${f.length} items · ${totalNetSold.toLocaleString()} net units sold`;
+  }
 }
 
 function buildBrands() {
