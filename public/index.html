@@ -423,7 +423,7 @@ tbody tr:hover td{background:var(--bg)}
       <!-- DEAD STOCK -->
       <div id="tab-dead" class="tab">
         <div class="pg-title">Dead Stock</div>
-        <div class="pg-sub">Items with no sale for 90+ days</div>
+        <div class="pg-sub">Items with no sale for 90+ days — capital blocked</div>
         <div class="mg" id="ds-m"></div>
         <div id="ds-alerts"></div>
         <div class="two">
@@ -432,10 +432,22 @@ tbody tr:hover td{background:var(--bg)}
         </div>
         <div class="card">
           <div class="ct">Dead stock register</div>
+          <div class="frow">
+            <select class="fs" id="ds-sup" onchange="renderDead()"><option value="">All suppliers</option></select>
+            <select class="fs" id="ds-brand" onchange="renderDead()"><option value="">All brands</option></select>
+            <select class="fs" id="ds-age" onchange="renderDead()">
+              <option value="">All ages</option>
+              <option value="90">90–120 days</option>
+              <option value="120">120–180 days</option>
+              <option value="180">180+ days</option>
+            </select>
+            <input class="fsrch" id="ds-srch" placeholder="Search supplier / item / lot no..." oninput="renderDead()">
+          </div>
           <div class="tw"><table>
-            <thead><tr><th>Lot No.</th><th>Item</th><th>Supplier</th><th>Size</th><th>Live Stock</th><th>Avg Cost ₹</th><th>Value Blocked ₹</th><th>Last Sale</th><th>Days Unsold</th><th>Action</th></tr></thead>
+            <thead><tr><th>Lot No.</th><th>Item</th><th>Supplier</th><th>Brand</th><th>Size</th><th>Live Stock</th><th>Avg Cost ₹</th><th>Value Blocked ₹</th><th>Last Sale</th><th>Days Unsold</th><th>Action</th></tr></thead>
             <tbody id="ds-body"></tbody>
           </table></div>
+          <div id="ds-count" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
         </div>
       </div>
 
@@ -945,7 +957,7 @@ function renderCompanyStock() {
   setMG('cw-m',[
     {l:'Total companies',  v:groups.length},
     {l:'Total stock',      v:groups.reduce((s,g)=>s+g.totalStock,0).toLocaleString()+' units'},
-    {l:'Total value',      v:'₹'+Math.round(groups.reduce((s,g)=>s+g.totalValue,0)).toLocaleString('en-IN')},
+    {l:'Unsold stock value',      v:'₹'+Math.round(groups.reduce((s,g)=>s+g.totalValue,0)).toLocaleString('en-IN'), s:'value of items NOT yet sold'},
     {l:'Top company',      v:groups[0]?groups[0].brand:'—', s:groups[0]?groups[0].totalStock+' units':''},
   ]);
 
@@ -959,14 +971,14 @@ function renderCompanyStock() {
             <span><span class="group-stat-val">${g.totalStock.toLocaleString()}</span> in stock</span>
             <span><span class="group-stat-val">${g.totalPurchased.toLocaleString()}</span> purchased</span>
             <span><span class="group-stat-val">${g.totalSold.toLocaleString()}</span> sold</span>
-            <span>Value <span class="group-stat-val">₹${Math.round(g.totalValue).toLocaleString('en-IN')}</span></span>
+            <span>Unsold Value <span class="group-stat-val">₹${Math.round(g.totalValue).toLocaleString('en-IN')}</span></span>
           </div>
         </div>
         <div class="chev">▶</div>
       </div>
       <div class="group-body" id="cw-body-${idx}">
         <div class="tw"><table>
-          <thead><tr><th>Lot No.</th><th>Item</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Live Stock</th><th>Avg Cost</th><th>Value</th></tr></thead>
+          <thead><tr><th>Lot No.</th><th>Item</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Live Stock</th><th>Avg Cost</th><th>Unsold Value</th></tr></thead>
           <tbody>${g.articles.sort((a,b)=>b.liveStock-a.liveStock).map(a=>`<tr>
             <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
             <td style="font-weight:600">${a.item||'—'}</td>
@@ -1017,7 +1029,7 @@ function renderSupplierStock() {
   setMG('sw-m',[
     {l:'Total suppliers',  v:groups.length},
     {l:'Total stock',      v:groups.reduce((s,g)=>s+g.totalStock,0).toLocaleString()+' units'},
-    {l:'Total value',      v:'₹'+Math.round(groups.reduce((s,g)=>s+g.totalValue,0)).toLocaleString('en-IN')},
+    {l:'Unsold stock value',      v:'₹'+Math.round(groups.reduce((s,g)=>s+g.totalValue,0)).toLocaleString('en-IN'), s:'value of items NOT yet sold'},
     {l:'Top supplier',     v:groups[0]?groups[0].supplier:'—', s:groups[0]?groups[0].totalStock+' units':''},
   ]);
 
@@ -1031,14 +1043,14 @@ function renderSupplierStock() {
             <span><span class="group-stat-val">${g.totalStock.toLocaleString()}</span> in stock</span>
             <span><span class="group-stat-val">${g.totalPurchased.toLocaleString()}</span> purchased</span>
             <span><span class="group-stat-val">${g.totalSold.toLocaleString()}</span> sold</span>
-            <span>Value <span class="group-stat-val">₹${Math.round(g.totalValue).toLocaleString('en-IN')}</span></span>
+            <span>Unsold Value <span class="group-stat-val">₹${Math.round(g.totalValue).toLocaleString('en-IN')}</span></span>
           </div>
         </div>
         <div class="chev">▶</div>
       </div>
       <div class="group-body" id="sw-body-${idx}">
         <div class="tw"><table>
-          <thead><tr><th>Lot No.</th><th>Item</th><th>Brand</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Live Stock</th><th>Avg Cost</th><th>Value</th></tr></thead>
+          <thead><tr><th>Lot No.</th><th>Item</th><th>Brand</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Live Stock</th><th>Avg Cost</th><th>Unsold Value</th></tr></thead>
           <tbody>${g.articles.sort((a,b)=>b.liveStock-a.liveStock).map(a=>`<tr>
             <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
             <td style="font-weight:600">${a.item||'—'}</td>
@@ -1180,10 +1192,43 @@ function buildDead() {
   mkBars('ds-sup-bars',Object.entries(supM).sort((a,b)=>b[1]-a[1]).map(([s,n])=>({s,n})),'s','n',['#d85a30']);
   mkBars('ds-item-bars',Object.entries(itemM).sort((a,b)=>b[1]-a[1]).map(([item,n])=>({item,n})),'item','n',['#e89008']);
 
-  document.getElementById('ds-body').innerHTML=dead.slice(0,100).map(a=>`<tr>
+  // Populate dead stock filters
+  const dsSups=[...new Set(dead.map(a=>a.supplier||a.brand||'Unknown'))].sort();
+  const dsBrands=[...new Set(dead.map(a=>a.brand||'Unknown'))].sort();
+  const setOpts2=(id,vals,label)=>{const el=document.getElementById(id);if(!el)return;el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option>${v}</option>`).join('');};
+  setOpts2('ds-sup',dsSups,'All suppliers');
+  setOpts2('ds-brand',dsBrands,'All brands');
+
+  renderDead();
+}
+
+function renderDead() {
+  const arts=getArtStats();
+  const dead=arts.filter(a=>a.daysSince>=90&&a.liveStock>0).sort((a,b)=>b.daysSince-a.daysSince);
+
+  const supF=document.getElementById('ds-sup').value;
+  const brF=document.getElementById('ds-brand').value;
+  const ageF=document.getElementById('ds-age').value;
+  const srch=document.getElementById('ds-srch').value.toLowerCase();
+
+  const filtered=dead.filter(a=>{
+    if(supF&&(a.supplier||a.brand||'Unknown')!==supF) return false;
+    if(brF&&(a.brand||'Unknown')!==brF) return false;
+    if(ageF==='90'&&(a.daysSince<90||a.daysSince>=120)) return false;
+    if(ageF==='120'&&(a.daysSince<120||a.daysSince>=180)) return false;
+    if(ageF==='180'&&a.daysSince<180) return false;
+    if(srch&&!(a.supplier||'').toLowerCase().includes(srch)&&!(a.item||'').toLowerCase().includes(srch)&&!(a.lotNo||'').toLowerCase().includes(srch)&&!(a.brand||'').toLowerCase().includes(srch)) return false;
+    return true;
+  });
+
+  const filteredVal=filtered.reduce((s,a)=>s+a.stockVal,0);
+  const filteredQty=filtered.reduce((s,a)=>s+a.liveStock,0);
+
+  document.getElementById('ds-body').innerHTML=filtered.slice(0,500).map(a=>`<tr>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
     <td style="font-weight:600">${a.item||'—'}</td>
-    <td>${a.supplier||a.brand||'—'}</td>
+    <td>${a.supplier||'—'}</td>
+    <td>${a.brand||'—'}</td>
     <td>${a.size||'—'}</td>
     <td style="font-weight:700">${a.liveStock}</td>
     <td>₹${Math.round(a.avgCost)}</td>
@@ -1191,7 +1236,9 @@ function buildDead() {
     <td>${a.lastSale?a.lastSale.toLocaleDateString('en-IN'):'Never'}</td>
     <td style="color:var(--red-m);font-weight:700">${a.daysSince>=9999?'Never':a.daysSince+' days'}</td>
     <td><span class="tag ${a.daysSince>=180?'tr':a.daysSince>=120?'ta':'tgr'}">${a.daysSince>=180?'Clearance':a.daysSince>=120?'30% off':'20% off'}</span></td>
-  </tr>`).join('')||noData(10);
+  </tr>`).join('')||noData(11);
+
+  document.getElementById('ds-count').innerHTML=`Showing ${Math.min(filtered.length,500)} of ${filtered.length} dead items · ${filteredQty.toLocaleString()} units · ₹${Math.round(filteredVal).toLocaleString('en-IN')} blocked`;
 }
 
 function buildPurReg() { renderPur(); }
