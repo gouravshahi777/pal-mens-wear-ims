@@ -399,7 +399,7 @@ tbody tr:hover td{background:var(--bg)}
               <input class="fsrch" id="br-srch" placeholder="Search brand..." oninput="renderBr()">
             </div>
             <div class="tw"><table>
-              <thead><tr><th>#</th><th>Brand</th><th>Supplier</th><th>Gross Sold</th><th>Returned</th><th>Net Sold</th><th>Return Rate</th></tr></thead>
+              <thead><tr><th>#</th><th>Brand</th><th>Supplier</th><th>Purchased</th><th>Gross Sold</th><th>Returned</th><th>Net Sold</th><th>Live Stock</th><th>Return Rate</th></tr></thead>
               <tbody id="br-body"></tbody>
             </table></div>
           </div>
@@ -699,20 +699,32 @@ function getBrandStats() {
   const m = {};
   // Build supplier map from purchase data
   const brandSupplier = {};
+  // First: add ALL brands from purchase data (so purchase-only brands appear)
   G.purchase.forEach(r => {
+    const brand = r.brand||'Unknown';
     if (r.brand && r.supplier) brandSupplier[r.brand] = r.supplier;
+    if (!m[brand]) m[brand]={brand:brand, supplier:'', grossSold:0, returned:0, purchased:0, liveStock:0};
+    m[brand].purchased += r.qty;
   });
+  // Then: add sale data
   G.sale.forEach(r => {
     const brand = r.brand||'Unknown';
-    if (!m[brand]) m[brand]={brand:brand, supplier:brandSupplier[brand]||'', grossSold:0, returned:0};
+    if (!m[brand]) m[brand]={brand:brand, supplier:'', grossSold:0, returned:0, purchased:0, liveStock:0};
     m[brand].grossSold += r.qty;
   });
   G.returns.forEach(r => {
     const brand = r.brand||'Unknown';
-    if (!m[brand]) m[brand]={brand:brand, supplier:brandSupplier[brand]||'', grossSold:0, returned:0};
+    if (!m[brand]) m[brand]={brand:brand, supplier:'', grossSold:0, returned:0, purchased:0, liveStock:0};
     m[brand].returned += r.qty;
   });
-  return Object.values(m).map(b=>{ b.netSold=Math.max(0,b.grossSold-b.returned); b.retRate=b.grossSold>0?Math.round(b.returned/b.grossSold*100):0; return b; }).sort((a,b)=>b.netSold-a.netSold);
+  // Set supplier from map
+  Object.values(m).forEach(b => { if (brandSupplier[b.brand]) b.supplier = brandSupplier[b.brand]; });
+  return Object.values(m).map(b=>{
+    b.netSold=Math.max(0,b.grossSold-b.returned);
+    b.liveStock=Math.max(0,b.purchased-b.netSold);
+    b.retRate=b.grossSold>0?Math.round(b.returned/b.grossSold*100):0;
+    return b;
+  }).sort((a,b)=>b.netSold-a.netSold);
 }
 
 function getMonthly() {
@@ -1215,15 +1227,17 @@ function renderBr() {
     if(srch&&!b.brand.toLowerCase().includes(srch)&&!(b.supplier||'').toLowerCase().includes(srch)) return false;
     return true;
   });
-  document.getElementById('br-body').innerHTML=f.slice(0,100).map((b,i)=>`<tr>
+  document.getElementById('br-body').innerHTML=f.slice(0,200).map((b,i)=>`<tr>
     <td><div class="rk ${i<3?'r'+(i+1):'rn'}">${i+1}</div></td>
     <td style="font-weight:600">${b.brand}</td>
     <td>${b.supplier||'—'}</td>
+    <td>${b.purchased}</td>
     <td>${b.grossSold}</td>
     <td style="${b.returned>0?'color:var(--purple-m);font-weight:600':''}">${b.returned}</td>
     <td style="font-weight:700">${b.netSold}</td>
+    <td style="font-weight:700;color:${b.liveStock===0?'var(--red-m)':b.liveStock<=10?'var(--amber-m)':'var(--green-m)'}">${b.liveStock}</td>
     <td><span class="tag ${b.retRate>15?'tr':b.retRate>5?'ta':'tg'}">${b.retRate}%</span></td>
-  </tr>`).join('')||noData(7);
+  </tr>`).join('')||noData(9);
 }
 
 function buildReturns() {
