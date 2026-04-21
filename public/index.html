@@ -425,7 +425,15 @@ tbody tr:hover td{background:var(--bg)}
       <!-- DEAD STOCK -->
       <div id="tab-dead" class="tab">
         <div class="pg-title">Dead Stock</div>
-        <div class="pg-sub">Items with no sale for 90+ days — capital blocked</div>
+        <div class="pg-sub">Items not sold within your selected period — capital blocked</div>
+        <div class="frow" style="margin-bottom:10px">
+          <select class="fs" id="ds-days" onchange="buildDead()" style="font-size:13px;font-weight:600;padding:8px 12px">
+            <option value="30">Not sold in last 30 days</option>
+            <option value="45">Not sold in last 45 days</option>
+            <option value="60">Not sold in last 60 days</option>
+            <option value="90" selected>Not sold in last 90 days</option>
+          </select>
+        </div>
         <div class="mg" id="ds-m"></div>
         <div id="ds-alerts"></div>
         <div class="two">
@@ -439,9 +447,6 @@ tbody tr:hover td{background:var(--bg)}
             <select class="fs" id="ds-brand" onchange="renderDead()"><option value="">All brands</option></select>
             <select class="fs" id="ds-age" onchange="renderDead()">
               <option value="">All ages</option>
-              <option value="90">90–120 days</option>
-              <option value="120">120–180 days</option>
-              <option value="180">180+ days</option>
               <option value="never">Never Sold</option>
             </select>
             <input class="fsrch" id="ds-srch" placeholder="Search supplier / item / lot no..." oninput="renderDead()">
@@ -896,14 +901,12 @@ function renderReorder() {
   const superFastCount = filtered.filter(r=>r.speedClass==='super').length;
   const fastCount = filtered.filter(r=>r.speedClass==='fast').length;
   const totalReorderQty = filtered.reduce((s,r)=>s+r.reorderQty, 0);
-  const estimatedCost = filtered.reduce((s,r)=>s+(r.reorderQty * r.avgCost), 0);
 
   setMG('ro-m',[
     {l:'Items to reorder',     v:filtered.length},
     {l:'Super fast (2×)',     v:superFastCount, s:'sold in ≤20 days', c:'up'},
     {l:'Normal (1×)',          v:fastCount, s:'sold in >20 days', c:'up'},
     {l:'Total reorder qty',   v:totalReorderQty.toLocaleString()},
-    {l:'Estimated cost',      v:'₹'+Math.round(estimatedCost).toLocaleString('en-IN'), s:'based on purchase price'},
   ]);
 
   document.getElementById('ro-body').innerHTML = filtered.slice(0, 500).map(r => {
@@ -1235,17 +1238,20 @@ function buildReturns() {
 }
 
 function buildDead() {
+  const deadDays = parseInt(document.getElementById('ds-days').value) || 90;
   const arts=getArtStats();
-  const dead=arts.filter(a=>a.daysSince>=90&&a.liveStock>0).sort((a,b)=>b.daysSince-a.daysSince);
+  const dead=arts.filter(a=>a.daysSince>=deadDays&&a.liveStock>0).sort((a,b)=>b.daysSince-a.daysSince);
   const dv=dead.reduce((s,a)=>s+a.stockVal,0);
+  const neverSold=dead.filter(a=>a.daysSince>=9999).length;
   setMG('ds-m',[
     {l:'Dead items',       v:dead.length, c:'dn'},
     {l:'Capital blocked',  v:'₹'+Math.round(dv).toLocaleString('en-IN'), c:'dn'},
-    {l:'Oldest unsold',    v:dead[0]?(dead[0].daysSince>=9999?'Never Sold':dead[0].daysSince+'d'):'—', s:dead[0]?dead[0].lotNo||dead[0].item:''},
-    {l:'180+ days',        v:dead.filter(a=>a.daysSince>=180).length, c:'dn'},
+    {l:'Never sold items', v:neverSold, s:'purchased but 0 sales', c:'dn'},
+    {l:'Total dead units', v:dead.reduce((s,a)=>s+a.liveStock,0).toLocaleString(), c:'dn'},
   ]);
   const al=[];
-  if(dead.filter(a=>a.daysSince>=180).length) al.push(dead.filter(a=>a.daysSince>=180).length+' articles beyond 180 days — clearance recommended');
+  if(neverSold) al.push(neverSold+' items purchased but NEVER sold — consider returning to supplier');
+  if(dead.length>100) al.push(dead.length+' items not sold in '+deadDays+'+ days — clearance recommended');
   document.getElementById('ds-alerts').innerHTML=al.map(a=>`<div class="alert-r">⚠️ ${a}</div>`).join('');
 
   const supM={},itemM={};
@@ -1264,8 +1270,9 @@ function buildDead() {
 }
 
 function renderDead() {
+  const deadDays = parseInt(document.getElementById('ds-days').value) || 90;
   const arts=getArtStats();
-  const dead=arts.filter(a=>a.daysSince>=90&&a.liveStock>0).sort((a,b)=>b.daysSince-a.daysSince);
+  const dead=arts.filter(a=>a.daysSince>=deadDays&&a.liveStock>0).sort((a,b)=>b.daysSince-a.daysSince);
 
   const supF=document.getElementById('ds-sup').value;
   const brF=document.getElementById('ds-brand').value;
@@ -1275,9 +1282,6 @@ function renderDead() {
   const filtered=dead.filter(a=>{
     if(supF&&(a.supplier||a.brand||'Unknown')!==supF) return false;
     if(brF&&(a.brand||'Unknown')!==brF) return false;
-    if(ageF==='90'&&(a.daysSince<90||a.daysSince>=120)) return false;
-    if(ageF==='120'&&(a.daysSince<120||a.daysSince>=180)) return false;
-    if(ageF==='180'&&(a.daysSince<180||a.daysSince>=9999)) return false;
     if(ageF==='never'&&a.daysSince<9999) return false;
     if(srch&&!(a.supplier||'').toLowerCase().includes(srch)&&!(a.item||'').toLowerCase().includes(srch)&&!(a.lotNo||'').toLowerCase().includes(srch)&&!(a.brand||'').toLowerCase().includes(srch)) return false;
     return true;
@@ -1297,7 +1301,7 @@ function renderDead() {
     <td style="font-weight:700;color:var(--red-m)">₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td>
     <td>${a.lastSale?a.lastSale.toLocaleDateString('en-IN'):'<span style="color:var(--red-m)">Never Sold</span>'}</td>
     <td style="color:var(--red-m);font-weight:700">${a.daysSince>=9999?'Never Sold':a.daysSince+' days'}</td>
-    <td><span class="tag ${a.daysSince>=9999?'tr':a.daysSince>=180?'tr':a.daysSince>=120?'ta':'tgr'}">${a.daysSince>=9999?'Never Sold':a.daysSince>=180?'Clearance':a.daysSince>=120?'30% off':'20% off'}</span></td>
+    <td><span class="tag ${a.daysSince>=9999?'tr':a.daysSince>=180?'tr':a.daysSince>=90?'ta':'tgr'}">${a.daysSince>=9999?'Never Sold':a.daysSince>=180?'Clearance':a.daysSince>=90?'Slow':'Watch'}</span></td>
   </tr>`).join('')||noData(11);
 
   document.getElementById('ds-count').innerHTML=`Showing ${Math.min(filtered.length,500)} of ${filtered.length} dead items · ${filteredQty.toLocaleString()} units · ₹${Math.round(filteredVal).toLocaleString('en-IN')} blocked`;
