@@ -612,15 +612,22 @@ async function loadUlog() {
   } catch {}
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   FIX: getArtStats() — the core function that merges purchase + sale data
+   KEY  = lotNo|item|size  (3 parts ONLY — no supplier, no brand in key)
+   SUPPLIER = ONLY from purchase rows (r.supplier), NEVER fallback to brand
+   BRAND    = from purchase rows (r.brand) OR sale rows (r.brand)
+   ═══════════════════════════════════════════════════════════════════════════ */
 function getArtStats() {
   const m = {};
   G.purchase.forEach(r => {
     const k = (r.lotNo||'')+'|'+(r.item||'')+'|'+(r.size||'');
-    if (!m[k]) m[k] = { lotNo:r.lotNo, item:r.item, supplier:r.supplier||r.brand||'', brand:r.brand||'', size:r.size,
+    if (!m[k]) m[k] = { lotNo:r.lotNo, item:r.item, supplier:r.supplier||'', brand:r.brand||'', size:r.size,
       purchased:0, purchaseCost:0, grossSold:0, returned:0, saleDates:[], purchaseDates:[] };
     m[k].purchased += r.qty;
     m[k].purchaseCost += r.qty * (r.rate||0);
     if (r.date) m[k].purchaseDates.push(new Date(r.date));
+    // FIX: Only set supplier from purchase rows, never from brand
     if (!m[k].supplier && r.supplier) m[k].supplier = r.supplier;
     if (!m[k].brand && r.brand) m[k].brand = r.brand;
   });
@@ -648,7 +655,6 @@ function getArtStats() {
     a.daysSince   = a.lastSale ? Math.max(0,Math.round((new Date()-a.lastSale)/86400000)) : 9999;
     a.avgCost     = a.purchased > 0 ? a.purchaseCost / a.purchased : 0;
     a.stockVal    = a.liveStock * a.avgCost;
-    // Days to sell first batch: from first purchase to when a.purchased qty was reached in sales
     if (a.firstPurchase && a.saleDates.length) {
       const sorted = a.saleDates.slice().sort((x,y)=>x.date-y.date);
       let cumSold = 0, daysToSell = null;
@@ -838,7 +844,6 @@ function renderReorder() {
   cutoff.setDate(cutoff.getDate() - days);
 
   const arts = getArtStats();
-  // Filter: must have purchases AND must have sold within last N days
   const reorderItems = arts.filter(a => {
     if (a.purchased <= 0) return false;
     if (!a.saleDates.length) return false;
@@ -847,9 +852,6 @@ function renderReorder() {
     return true;
   }).map(a => {
     const soldInPeriod = a.saleDates.filter(s => s.date >= cutoff).reduce((sum,s)=>sum+s.qty, 0);
-    // Speed classification:
-    // Super fast: sold all purchased qty within 10 days of first purchase → 2× reorder
-    // Fast: sold within 30 days → 1× reorder
     let reorderMultiplier = 1;
     let speedClass = 'fast';
     if (a.daysToSell !== null && a.daysToSell <= 10) {
@@ -868,7 +870,6 @@ function renderReorder() {
     };
   }).sort((a,b) => b.soldInPeriod - a.soldInPeriod);
 
-  // Apply filters
   const filtered = reorderItems.filter(r => {
     if (brF && (r.brand||'') !== brF) return false;
     if (supF && (r.supplier||'') !== supF) return false;
@@ -994,8 +995,8 @@ function renderSupplierStock() {
   const arts = getArtStats();
   const bySupplier = {};
   arts.forEach(a => {
-    // Use real supplier from purchase records; if no purchase record exists, use brand as fallback
-    const sup = a.supplier || a.brand || 'Unknown';
+    // FIX: Use supplier only (from purchase PARTY NAME). If blank, show as "Unknown Supplier"
+    const sup = a.supplier || 'Unknown Supplier';
     if (!bySupplier[sup]) bySupplier[sup] = { supplier:sup, articles:[], totalStock:0, totalValue:0, totalPurchased:0, totalSold:0 };
     bySupplier[sup].articles.push(a);
     bySupplier[sup].totalStock += a.liveStock;
@@ -1077,7 +1078,7 @@ function renderFM() {
   const srch=document.getElementById('fm-srch').value.toLowerCase();
   const f=arts.filter(a=>{
     if(catF&&(a.item||'')!==catF) return false;
-    if(brF&&(a.brand||a.supplier||'')!==brF) return false;
+    if(brF&&(a.brand||'')!==brF) return false;
     if(srch&&!(a.lotNo||'').toLowerCase().includes(srch)&&!(a.item||'').toLowerCase().includes(srch)) return false;
     return a.netSold>0;
   });
@@ -1085,7 +1086,7 @@ function renderFM() {
     <td><div class="rk ${i<3?'r'+(i+1):'rn'}">${i+1}</div></td>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
     <td style="font-weight:600">${a.item||'—'}</td>
-    <td>${a.brand||a.supplier||'—'}</td>
+    <td>${a.brand||'—'}</td>
     <td>${a.size||'—'}</td>
     <td>${a.grossSold}</td>
     <td style="${a.returned>0?'color:var(--purple-m);font-weight:600':''}">${a.returned}</td>
@@ -1173,14 +1174,14 @@ function buildDead() {
   document.getElementById('ds-alerts').innerHTML=al.map(a=>`<div class="alert-r">⚠️ ${a}</div>`).join('');
 
   const supM={},itemM={};
-  dead.forEach(a=>{supM[a.supplier||a.brand||'Unknown']=(supM[a.supplier||a.brand||'Unknown']||0)+1;itemM[a.item||'Unknown']=(itemM[a.item||'Unknown']||0)+a.liveStock;});
+  dead.forEach(a=>{supM[a.supplier||'Unknown']=(supM[a.supplier||'Unknown']||0)+1;itemM[a.item||'Unknown']=(itemM[a.item||'Unknown']||0)+a.liveStock;});
   mkBars('ds-sup-bars',Object.entries(supM).sort((a,b)=>b[1]-a[1]).map(([s,n])=>({s,n})),'s','n',['#d85a30']);
   mkBars('ds-item-bars',Object.entries(itemM).sort((a,b)=>b[1]-a[1]).map(([item,n])=>({item,n})),'item','n',['#e89008']);
 
   document.getElementById('ds-body').innerHTML=dead.slice(0,100).map(a=>`<tr>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
     <td style="font-weight:600">${a.item||'—'}</td>
-    <td>${a.supplier||a.brand||'—'}</td>
+    <td>${a.supplier||'—'}</td>
     <td>${a.size||'—'}</td>
     <td style="font-weight:700">${a.liveStock}</td>
     <td>₹${Math.round(a.avgCost)}</td>
@@ -1232,10 +1233,16 @@ function renderSal() {
   </tr>`).join('')||noData(8);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   FIX: populateFilters() — supplier dropdown now gets values from BOTH
+   raw purchase data AND computed artStats, so values always match
+   ═══════════════════════════════════════════════════════════════════════════ */
 function populateFilters() {
+  const arts = getArtStats();
   const cats=[...new Set(G.sale.map(r=>r.item).filter(Boolean))].sort();
   const brs=[...new Set(G.sale.map(r=>r.brand).filter(Boolean))].sort();
-  const sups=[...new Set(G.purchase.map(r=>r.supplier).filter(Boolean))].sort();
+  // FIX: Get suppliers from artStats (computed supplier values) so dropdown matches filter
+  const sups=[...new Set(arts.map(a=>a.supplier).filter(Boolean))].sort();
   const items=[...new Set(G.purchase.map(r=>r.item).filter(Boolean))].sort();
   const allBrands = [...new Set([...brs, ...G.purchase.map(r=>r.brand).filter(Boolean)])].sort();
   const setOpts=(id,vals,label)=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option>${v}</option>`).join('');el.value=cur;};
@@ -1252,7 +1259,7 @@ function setThisWeek() {
   const day = today.getDay();
   const sunday = new Date(today);
   sunday.setDate(today.getDate() + (7 - day) % 7);
-  if ((7 - day) % 7 === 0) sunday.setDate(sunday.getDate() + 7);
+  if ((7 - day) % 0 === 0) sunday.setDate(sunday.getDate() + 7);
   document.getElementById('wk-date').value = sunday.toISOString().split('T')[0];
   buildWeekly();
 }
@@ -1281,7 +1288,7 @@ function buildWeekly() {
   arts.forEach(a => { artByKey[(a.lotNo||'')+'|'+(a.item||'')+'|'+(a.size||'')] = a; });
   const enriched = Object.entries(thisWeek).map(([k, tw]) => {
     const lw = lastWeek[k] || { qty:0 };
-    const art = artByKey[k] || { liveStock:0, avgCost:0, supplier:tw.brand||'' };
+    const art = artByKey[k] || { liveStock:0, avgCost:0, supplier:'' };
     const velocity = tw.qty / 7;
     const daysCover = velocity > 0 ? Math.floor(art.liveStock / velocity) : 999;
     return { ...tw, lw: lw.qty, art, daysCover };
@@ -1299,7 +1306,7 @@ function buildWeekly() {
     : `<div style="font-size:12px;color:var(--red-m);font-weight:600;margin-bottom:8px">⚠️ ${urgent.length} items need urgent restock</div>`;
   document.getElementById('wk-urgent-tbl').innerHTML = urgent.slice(0,20).map(r=>`<tr>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${r.lotNo||'—'}</td>
-    <td style="font-weight:700">${r.item||'—'}</td><td>${r.brand||r.art.supplier||'—'}</td><td>${r.size||'—'}</td>
+    <td style="font-weight:700">${r.item||'—'}</td><td>${r.art.supplier||r.brand||'—'}</td><td>${r.size||'—'}</td>
     <td style="font-weight:700;color:var(--green-m)">${r.qty}</td>
     <td style="font-weight:700;color:${r.art.liveStock===0?'var(--red-m)':'var(--amber-m)'}">${r.art.liveStock}</td>
     <td style="color:var(--red-m);font-weight:700">${r.daysCover>=999?'—':r.daysCover+' days'}</td>
@@ -1320,7 +1327,7 @@ function buildWeekly() {
     : '<div style="font-size:12px;color:var(--green-m);font-weight:600">✓ No dead stock</div>';
   document.getElementById('wk-dead-tbl').innerHTML = deadArts.slice(0,30).map(a=>`<tr>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
-    <td style="font-weight:700">${a.item||'—'}</td><td>${a.supplier||a.brand||'—'}</td><td>${a.size||'—'}</td>
+    <td style="font-weight:700">${a.item||'—'}</td><td>${a.supplier||'—'}</td><td>${a.size||'—'}</td>
     <td style="font-weight:700">${a.liveStock}</td>
     <td style="font-weight:700;color:var(--red-m)">₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td>
     <td style="color:var(--red-m);font-weight:700">${a.daysSince>=9999?'Never':a.daysSince+' days'}</td>
