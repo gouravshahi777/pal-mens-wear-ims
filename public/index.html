@@ -6,6 +6,7 @@
 <title>PAL MENS WEAR — IMS</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{
   --bg:#f5f4f0;--surf:#fff;--surf2:#efede7;--border:#e0ddd4;
@@ -23,7 +24,6 @@ input,select,button{font-family:'DM Sans',sans-serif}
 .page{display:none}.page.active{display:block}
 .tab{display:none}.tab.active{display:block}
 
-/* LOGIN */
 #pg-login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
 .login-box{background:var(--surf);border:1px solid var(--border);border-radius:var(--rl);padding:2.5rem;width:100%;max-width:380px}
 .llogo{display:flex;align-items:center;gap:10px;margin-bottom:2rem}
@@ -37,7 +37,6 @@ input,select,button{font-family:'DM Sans',sans-serif}
 .btn-login:hover{opacity:.9}
 .lerr{background:var(--red-l);color:var(--red);border-radius:var(--r);padding:9px 12px;font-size:12px;margin-bottom:12px;display:none}
 
-/* TOP NAV */
 .topnav{background:var(--surf);border-bottom:1px solid var(--border);padding:0 1.25rem;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:100}
 .tnlogo{display:flex;align-items:center;gap:8px}
 .tnlogo-ic{width:28px;height:28px;background:var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700}
@@ -48,7 +47,6 @@ input,select,button{font-family:'DM Sans',sans-serif}
 .tnrole{font-size:10px;color:var(--muted)}
 .btn-out{padding:5px 10px;border:1px solid var(--border);border-radius:var(--r);background:transparent;color:var(--muted);cursor:pointer;font-size:11px}
 
-/* LAYOUT */
 .layout{display:flex;min-height:calc(100vh - 54px)}
 .sidebar{width:200px;background:var(--surf);border-right:1px solid var(--border);padding:.75rem 0;flex-shrink:0;position:sticky;top:54px;height:calc(100vh - 54px);overflow-y:auto}
 .sb-lbl{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.6px;padding:8px 12px 3px;text-transform:uppercase}
@@ -58,7 +56,6 @@ input,select,button{font-family:'DM Sans',sans-serif}
 .sb-ico{font-size:14px;width:18px;text-align:center}
 .main{flex:1;padding:1.25rem;overflow-x:hidden;min-width:0}
 
-/* STAFF PAGE */
 .staff-wrap{max-width:580px;margin:2.5rem auto;padding:0 1rem}
 .staff-hd{text-align:center;margin-bottom:2rem}
 .staff-title{font-size:20px;font-weight:700;margin-bottom:5px}
@@ -77,7 +74,6 @@ input,select,button{font-family:'DM Sans',sans-serif}
 .st-ok{background:var(--green-l);color:var(--green)}.st-err{background:var(--red-l);color:var(--red)}.st-loading{background:var(--blue-l);color:var(--blue)}
 .fi-hidden{display:none}
 
-/* METRICS */
 .pg-title{font-size:18px;font-weight:700;margin-bottom:3px}
 .pg-sub{font-size:12px;color:var(--muted);margin-bottom:1.25rem}
 .mg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin-bottom:1.25rem}
@@ -87,13 +83,11 @@ input,select,button{font-family:'DM Sans',sans-serif}
 .ms{font-size:10px;margin-top:2px}
 .up{color:var(--green)}.dn{color:var(--red)}.pu{color:var(--purple-m)}
 
-/* CARDS */
 .card{background:var(--surf);border:1px solid var(--border);border-radius:var(--rl);padding:1rem 1.25rem;margin-bottom:1rem}
 .ct{font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;text-transform:uppercase;letter-spacing:.3px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
 @media(max-width:680px){.two{grid-template-columns:1fr}.sidebar{display:none}}
 
-/* TABLE */
 .tw{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:12px}
 th{font-size:10px;font-weight:700;color:var(--muted);text-align:left;padding:7px 9px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surf2);text-transform:uppercase;letter-spacing:.3px}
@@ -101,13 +95,11 @@ td{padding:8px 9px;border-bottom:1px solid var(--border);color:var(--text);verti
 tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:var(--bg)}
 
-/* TAGS */
 .tag{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700}
 .tg{background:var(--green-l);color:var(--green)}.tr{background:var(--red-l);color:var(--red)}
 .ta{background:var(--amber-l);color:var(--amber)}.tb{background:var(--blue-l);color:var(--blue)}
 .tp{background:var(--purple-l);color:var(--purple)}.tgr{background:var(--surf2);color:var(--muted)}
 
-/* BARS */
 .bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
 .bl{min-width:110px;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bt{flex:1;height:6px;background:var(--surf2);border-radius:3px;overflow:hidden}
@@ -116,13 +108,11 @@ tbody tr:hover td{background:var(--bg)}
 .rk{width:17px;height:17px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
 .r1{background:#faeeda;color:#7a4000}.r2{background:#e8e8e8;color:#444}.r3{background:#fde8e0;color:#7a2000}.rn{background:var(--surf2);color:var(--muted)}
 
-/* INSIGHTS */
 .ins{background:var(--surf2);border-radius:var(--r);padding:9px 11px;margin-bottom:7px;display:flex;gap:9px}
 .ins-i{font-size:15px;flex-shrink:0}
 .ins-t{font-size:11px;font-weight:700;color:var(--text);margin-bottom:2px}
 .ins-s{font-size:11px;color:var(--muted)}
 
-/* FILTERS */
 .frow{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
 .fs{padding:6px 9px;border:1px solid var(--border);border-radius:var(--r);background:var(--surf);color:var(--text);font-size:11px}
 .fsrch{padding:6px 9px;border:1px solid var(--border);border-radius:var(--r);background:var(--surf);color:var(--text);font-size:11px;flex:1;min-width:130px}
@@ -132,23 +122,15 @@ tbody tr:hover td{background:var(--bg)}
 .chw{position:relative;width:100%;height:190px}
 .empty{text-align:center;padding:2rem;color:var(--muted);font-size:12px}
 
-/* UPLOAD LOG */
 .ulog-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:11px;gap:8px;flex-wrap:wrap}
 .ulog-row:last-child{border-bottom:none}
 
-/* SETTINGS */
 .u-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
 .u-row:last-child{border-bottom:none}
 .u-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
 .btn-sm{padding:5px 10px;border:1px solid var(--border);border-radius:var(--r);background:transparent;color:var(--muted);cursor:pointer;font-size:11px}
 .btn-danger{border-color:var(--red-m);color:var(--red)}.btn-danger:hover{background:var(--red-l)}
-.wk-card{border-radius:var(--r);padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.wk-urgent-c{background:#fff0f0;border:1px solid #fcc}
-.wk-soon-c{background:#fffbe6;border:1px solid #fde68a}
-.wk-ok-c{background:var(--green-l);border:1px solid #a7f3d0}
-.wk-label{font-size:12px;font-weight:700;color:var(--text)}
-.wk-sub{font-size:11px;color:var(--muted);margin-top:2px}
-.wk-badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
+
 .trend-up{color:var(--green-m);font-weight:700}
 .trend-dn{color:var(--red-m);font-weight:700}
 .trend-eq{color:var(--muted);font-weight:600}
@@ -157,13 +139,27 @@ tbody tr:hover td{background:var(--bg)}
 .sum-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
 .sum-val{font-size:18px;font-weight:700;color:var(--text)}
 .sum-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+.group-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:10px}
+.group-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;cursor:pointer}
+.group-title{font-size:14px;font-weight:700;color:var(--text)}
+.group-stats{display:flex;gap:12px;font-size:11px;color:var(--muted);flex-wrap:wrap}
+.group-stat-val{font-weight:700;color:var(--text)}
+.group-body{display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
+.group-body.open{display:block}
+.chev{font-size:14px;color:var(--muted);transition:transform .2s}
+.chev.open{transform:rotate(90deg)}
+
+.btn-prim{padding:6px 14px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer}
+.btn-prim:hover{opacity:.9}
+
 @media print{.sidebar,.topnav,.btn-out,.btn-login{display:none!important}.main{padding:0}.tab{display:block!important}}
 </style>
 </head>
 <body>
 <div id="app">
 
-<!-- ══ LOGIN ══════════════════════════════════════════════════════════════════ -->
+<!-- LOGIN -->
 <div id="pg-login" class="page active">
   <div class="login-box">
     <div class="llogo">
@@ -182,7 +178,7 @@ tbody tr:hover td{background:var(--bg)}
   </div>
 </div>
 
-<!-- ══ STAFF PAGE ══════════════════════════════════════════════════════════════ -->
+<!-- STAFF PAGE -->
 <div id="pg-staff" class="page">
   <div class="topnav">
     <div class="tnlogo"><div class="tnlogo-ic">PMW</div><div class="tnlogo-t">PAL MENS WEAR</div></div>
@@ -198,10 +194,9 @@ tbody tr:hover td{background:var(--bg)}
       <div class="staff-sub">Upload your Excel files below. You cannot view any data.</div>
       <div class="staff-badge">● Data saves permanently — never lost</div>
     </div>
-
     <div class="up-card">
       <div class="up-title">📥 Purchase Report</div>
-      <div class="up-sub">Your daily purchase Excel — all bills of the day in one file</div>
+      <div class="up-sub">Your daily purchase Excel</div>
       <div class="drop-zone" id="dz-p" onclick="document.getElementById('fp').click()" ondragover="dzo(event,'p')" ondragleave="dzl('p')" ondrop="dzd(event,'p')">
         <div class="drop-ico">📊</div>
         <div class="drop-txt">Drag & drop Purchase Excel here or click to browse</div>
@@ -210,7 +205,6 @@ tbody tr:hover td{background:var(--bg)}
       <div class="up-stat" id="sp"></div>
       <input type="file" id="fp" class="fi-hidden" accept=".xlsx,.xls,.csv" onchange="doUpload(this,'purchase','sp')">
     </div>
-
     <div class="up-card">
       <div class="up-title">📤 Sale Report</div>
       <div class="up-sub">Your daily sale Excel — returns (negative qty) handled automatically</div>
@@ -225,7 +219,7 @@ tbody tr:hover td{background:var(--bg)}
   </div>
 </div>
 
-<!-- ══ DASHBOARD ══════════════════════════════════════════════════════════════ -->
+<!-- DASHBOARD -->
 <div id="pg-dash" class="page">
   <div class="topnav">
     <div class="tnlogo"><div class="tnlogo-ic">PMW</div><div class="tnlogo-t">PAL MENS WEAR — IMS</div></div>
@@ -240,8 +234,11 @@ tbody tr:hover td{background:var(--bg)}
       <div class="sb-lbl">Dashboard</div>
       <div class="sb-item active" onclick="sw('overview',this)"><span class="sb-ico">📊</span>Overview</div>
       <div class="sb-item" onclick="sw('inventory',this)"><span class="sb-ico">📦</span>Live Inventory</div>
+      <div class="sb-item" onclick="sw('reorder',this)"><span class="sb-ico">🛒</span>Reorder Sheet</div>
+      <div class="sb-item" onclick="sw('companyStock',this)"><span class="sb-ico">🏷️</span>Company-wise Stock</div>
+      <div class="sb-item" onclick="sw('supplierStock',this)"><span class="sb-ico">🏢</span>Supplier-wise Stock</div>
       <div class="sb-item" onclick="sw('fastmov',this)"><span class="sb-ico">🔥</span>Fast Movers</div>
-      <div class="sb-item" onclick="sw('brands',this)"><span class="sb-ico">🏷️</span>Brand Analysis</div>
+      <div class="sb-item" onclick="sw('brands',this)"><span class="sb-ico">📈</span>Brand Analysis</div>
       <div class="sb-lbl">Reports</div>
       <div class="sb-item" onclick="sw('returns',this)"><span class="sb-ico">🔄</span>Returns</div>
       <div class="sb-item" onclick="sw('dead',this)"><span class="sb-ico">⚠️</span>Dead Stock</div>
@@ -267,6 +264,7 @@ tbody tr:hover td{background:var(--bg)}
           <div class="card"><div class="ct">Live insights</div><div id="insights"></div></div>
           <div class="card"><div class="ct">Monthly purchase trend</div><div class="chw"><canvas id="trend-c"></canvas></div></div>
         </div>
+        <div class="card"><div class="ct">Data health — sales vs purchases</div><div id="data-health"></div></div>
       </div>
 
       <!-- LIVE INVENTORY -->
@@ -275,10 +273,11 @@ tbody tr:hover td{background:var(--bg)}
         <div class="pg-sub">Real stock = Purchased − Net Sold (returns added back automatically)</div>
         <div class="mg" id="inv-m"></div>
         <div class="card">
-          <div class="ct">All articles — current stock</div>
+          <div class="ct" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">All articles — current stock <div><button class="btn-prim" onclick="exportExcel('inventory','filtered')" style="font-size:11px;padding:5px 10px">📥 Export Filtered</button> <button class="btn-prim" onclick="exportExcel('inventory','all')" style="font-size:11px;padding:5px 10px;background:var(--green)">📥 Export All</button></div></div>
           <div class="frow">
-            <select class="fs" id="inv-cat" onchange="renderInv()"><option value="">All categories</option></select>
+            <select class="fs" id="inv-cat" onchange="renderInv()"><option value="">All items</option></select>
             <select class="fs" id="inv-sup" onchange="renderInv()"><option value="">All suppliers</option></select>
+            <select class="fs" id="inv-brand" onchange="renderInv()"><option value="">All brands</option></select>
             <select class="fs" id="inv-stk" onchange="renderInv()">
               <option value="">All stock levels</option>
               <option value="out">Out of stock (0)</option>
@@ -288,10 +287,77 @@ tbody tr:hover td{background:var(--bg)}
             <input class="fsrch" id="inv-srch" placeholder="Search item / lot no..." oninput="renderInv()">
           </div>
           <div class="tw"><table>
-            <thead><tr><th>Lot No.</th><th>Item Name</th><th>Supplier</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Returned</th><th>Live Stock</th><th>Avg Cost</th><th>Stock Value</th><th>Status</th></tr></thead>
+            <thead><tr><th>Lot No.</th><th>Item</th><th>Brand</th><th>Supplier</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Returned</th><th>Live Stock</th><th>Avg Cost</th><th>Stock Value</th><th>Status</th></tr></thead>
             <tbody id="inv-body"></tbody>
           </table></div>
         </div>
+      </div>
+
+      <!-- REORDER SHEET -->
+      <div id="tab-reorder" class="tab">
+        <div class="pg-title">🛒 Reorder Sheet</div>
+        <div class="pg-sub">Items that sold within selected period. Items sold in ≤20 days get 2× reorder suggestion, others get 1×.</div>
+        <div class="frow">
+          <select class="fs" id="ro-days" onchange="renderReorder()">
+            <option value="30">Sold in last 30 days</option>
+            <option value="45">Sold in last 45 days</option>
+            <option value="60">Sold in last 60 days</option>
+            <option value="90">Sold in last 90 days</option>
+          </select>
+          <select class="fs" id="ro-brand" onchange="renderReorder()"><option value="">All brands</option></select>
+          <select class="fs" id="ro-sup" onchange="renderReorder()"><option value="">All suppliers</option></select>
+          <select class="fs" id="ro-speed" onchange="renderReorder()">
+            <option value="">All speeds</option>
+            <option value="super">🔥 Super fast (≤20 days) — 2× reorder</option>
+            <option value="fast">Normal (&gt;20 days) — 1× reorder</option>
+          </select>
+          <input class="fsrch" id="ro-srch" placeholder="Search item / lot no..." oninput="renderReorder()">
+          <button class="btn-prim" onclick="window.print()">🖨️ Print</button>
+          <button class="btn-prim" onclick="exportExcel('reorder','filtered')" style="background:var(--blue)">📥 Export Filtered</button>
+          <button class="btn-prim" onclick="exportExcel('reorder','all')" style="background:var(--green)">📥 Export All</button>
+        </div>
+        <div class="mg" id="ro-m"></div>
+        <div class="card">
+          <div class="ct">Items to reorder</div>
+          <div class="tw"><table>
+            <thead><tr><th>Lot No.</th><th>Item</th><th>Brand</th><th>Supplier</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Sold in period</th><th>Days to sell</th><th>Live Stock</th><th>Speed</th><th style="background:var(--green-l);color:var(--green)">Reorder Qty</th></tr></thead>
+            <tbody id="ro-body"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- COMPANY-WISE STOCK -->
+      <div id="tab-companyStock" class="tab">
+        <div class="pg-title">🏷️ Company-wise Stock</div>
+        <div class="pg-sub">Stock grouped by Company Name (brand). Click any company to see its items.</div>
+        <div class="frow">
+          <input class="fsrch" id="cw-srch" placeholder="Search company name..." oninput="renderCompanyStock()">
+          <select class="fs" id="cw-sort" onchange="renderCompanyStock()">
+            <option value="stock">Sort by stock qty (high to low)</option>
+            <option value="value">Sort by stock value (high to low)</option>
+            <option value="sold">Sort by sales (high to low)</option>
+            <option value="name">Sort by name (A-Z)</option>
+          </select>
+        </div>
+        <div class="mg" id="cw-m"></div>
+        <div id="cw-list"></div>
+      </div>
+
+      <!-- SUPPLIER-WISE STOCK -->
+      <div id="tab-supplierStock" class="tab">
+        <div class="pg-title">🏢 Supplier-wise Stock</div>
+        <div class="pg-sub">Stock grouped by Party Name (supplier). Click any supplier to see items.</div>
+        <div class="frow">
+          <input class="fsrch" id="sw-srch" placeholder="Search supplier name..." oninput="renderSupplierStock()">
+          <select class="fs" id="sw-sort" onchange="renderSupplierStock()">
+            <option value="stock">Sort by stock qty (high to low)</option>
+            <option value="value">Sort by stock value (high to low)</option>
+            <option value="purchased">Sort by purchased (high to low)</option>
+            <option value="name">Sort by name (A-Z)</option>
+          </select>
+        </div>
+        <div class="mg" id="sw-m"></div>
+        <div id="sw-list"></div>
       </div>
 
       <!-- FAST MOVERS -->
@@ -301,19 +367,21 @@ tbody tr:hover td{background:var(--bg)}
         <div class="mg" id="fm-m"></div>
         <div class="two">
           <div class="card"><div class="ct">Top items by net qty sold</div><div id="fm-bars"></div></div>
-          <div class="card"><div class="ct">Top categories</div><div id="cat-bars2"></div></div>
+          <div class="card"><div class="ct">Top item types</div><div id="cat-bars2"></div></div>
         </div>
         <div class="card">
           <div class="ct">Fast mover table</div>
           <div class="frow">
-            <select class="fs" id="fm-cat" onchange="renderFM()"><option value="">All categories</option></select>
+            <select class="fs" id="fm-month" onchange="renderFM()"><option value="">All months</option></select>
+            <select class="fs" id="fm-cat" onchange="renderFM()"><option value="">All items</option></select>
             <select class="fs" id="fm-br" onchange="renderFM()"><option value="">All brands</option></select>
             <input class="fsrch" id="fm-srch" placeholder="Search item / lot no..." oninput="renderFM()">
           </div>
           <div class="tw"><table>
-            <thead><tr><th>#</th><th>Lot No.</th><th>Item</th><th>Brand</th><th>Category</th><th>Size</th><th>Gross Sold</th><th>Returned</th><th>Net Sold</th><th>Speed</th></tr></thead>
+            <thead><tr><th>#</th><th>Lot No.</th><th>Item</th><th>Brand</th><th>Size</th><th>Gross Sold</th><th>Returned</th><th>Net Sold</th><th>Speed</th></tr></thead>
             <tbody id="fm-body"></tbody>
           </table></div>
+          <div id="fm-count" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
         </div>
       </div>
 
@@ -325,9 +393,13 @@ tbody tr:hover td{background:var(--bg)}
         <div class="two">
           <div class="card">
             <div class="ct">Brand performance</div>
-            <div class="frow"><select class="fs" id="br-cat" onchange="renderBr()"><option value="">All categories</option></select></div>
+            <div class="frow">
+              <select class="fs" id="br-brand" onchange="renderBr()"><option value="">All brands</option></select>
+              <select class="fs" id="br-sup" onchange="renderBr()"><option value="">All suppliers</option></select>
+              <input class="fsrch" id="br-srch" placeholder="Search brand..." oninput="renderBr()">
+            </div>
             <div class="tw"><table>
-              <thead><tr><th>#</th><th>Brand</th><th>Category</th><th>Gross Sold</th><th>Returned</th><th>Net Sold</th><th>Return Rate</th></tr></thead>
+              <thead><tr><th>#</th><th>Brand</th><th>Supplier</th><th>Purchased</th><th>Gross Sold</th><th>Returned</th><th>Net Sold</th><th>Live Stock</th><th>Return Rate</th></tr></thead>
               <tbody id="br-body"></tbody>
             </table></div>
           </div>
@@ -357,141 +429,88 @@ tbody tr:hover td{background:var(--bg)}
       <!-- DEAD STOCK -->
       <div id="tab-dead" class="tab">
         <div class="pg-title">Dead Stock</div>
-        <div class="pg-sub">Purchased items with no sale recorded for 90+ days</div>
+        <div class="pg-sub">Items not sold within your selected period — capital blocked</div>
+        <div class="frow" style="margin-bottom:10px">
+          <select class="fs" id="ds-days" onchange="buildDead()" style="font-size:13px;font-weight:600;padding:8px 12px">
+            <option value="30">Not sold in last 30 days</option>
+            <option value="45">Not sold in last 45 days</option>
+            <option value="60">Not sold in last 60 days</option>
+            <option value="90" selected>Not sold in last 90 days</option>
+          </select>
+        </div>
         <div class="mg" id="ds-m"></div>
         <div id="ds-alerts"></div>
         <div class="two">
           <div class="card"><div class="ct">Dead stock by supplier</div><div id="ds-sup-bars"></div></div>
-          <div class="card"><div class="ct">Dead stock by item type</div><div id="ds-item-bars"></div></div>
+          <div class="card"><div class="ct">Dead stock by item</div><div id="ds-item-bars"></div></div>
         </div>
         <div class="card">
           <div class="ct">Dead stock register</div>
+          <div class="frow">
+            <select class="fs" id="ds-sup" onchange="renderDead()"><option value="">All suppliers</option></select>
+            <select class="fs" id="ds-brand" onchange="renderDead()"><option value="">All brands</option></select>
+            <select class="fs" id="ds-age" onchange="renderDead()">
+              <option value="">All ages</option>
+              <option value="never">Never Sold</option>
+            </select>
+            <input class="fsrch" id="ds-srch" placeholder="Search supplier / item / lot no..." oninput="renderDead()">
+          </div>
           <div class="tw"><table>
-            <thead><tr><th>Lot No.</th><th>Item</th><th>Supplier</th><th>Size</th><th>Live Stock</th><th>Avg Cost ₹</th><th>Value Blocked ₹</th><th>Last Sale</th><th>Days Unsold</th><th>Action</th></tr></thead>
+            <thead><tr><th>Lot No.</th><th>Item</th><th>Supplier</th><th>Brand</th><th>Size</th><th>Live Stock</th><th>Avg Cost ₹</th><th>Value Blocked ₹</th><th>Last Sale</th><th>Days Unsold</th><th>Action</th></tr></thead>
             <tbody id="ds-body"></tbody>
           </table></div>
+          <div id="ds-count" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
         </div>
       </div>
 
-      <!-- WEEKLY REPORT -->
+      <!-- WEEKLY -->
       <div id="tab-weekly" class="tab">
         <div class="pg-title">Weekly Report</div>
-        <div class="pg-sub" id="wk-sub">Auto-generated every week — what to restock, what is slow, what is dead</div>
-
+        <div class="pg-sub" id="wk-sub">Auto-generated every week</div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap">
           <label style="font-size:12px;font-weight:600;color:var(--muted)">Select week ending:</label>
           <input type="date" id="wk-date" class="fs" onchange="buildWeekly()">
-          <button onclick="setThisWeek()" style="padding:6px 14px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer">This Week</button>
-          <button onclick="window.print()" style="padding:6px 14px;border:1px solid var(--border);border-radius:var(--r);font-size:12px;cursor:pointer;background:var(--surf)">🖨️ Print Report</button>
+          <button class="btn-prim" onclick="setThisWeek()">This Week</button>
+          <button onclick="window.print()" style="padding:6px 14px;border:1px solid var(--border);border-radius:var(--r);font-size:12px;cursor:pointer;background:var(--surf)">🖨️ Print</button>
         </div>
-
         <div class="mg" id="wk-m"></div>
-
-        <!-- RESTOCK URGENTLY -->
-        <div class="card">
-          <div class="ct" style="color:var(--red-m)">🚨 Restock Urgently — sold fast this week, stock very low</div>
-          <div id="wk-urgent"></div>
-          <div class="tw" style="margin-top:10px"><table>
-            <thead><tr><th>Lot No.</th><th>Item</th><th>Supplier</th><th>Size</th><th>Sold This Week</th><th>Live Stock</th><th>Days Cover</th><th>Action</th></tr></thead>
-            <tbody id="wk-urgent-tbl"></tbody>
-          </table></div>
-        </div>
-
-        <!-- RESTOCK SOON -->
-        <div class="card">
-          <div class="ct" style="color:var(--amber-m)">⚡ Restock Soon — selling well, stock running low</div>
-          <div class="tw"><table>
-            <thead><tr><th>Lot No.</th><th>Item</th><th>Supplier</th><th>Size</th><th>Sold This Week</th><th>Sold Last Week</th><th>Live Stock</th><th>Days Cover</th><th>Trend</th></tr></thead>
-            <tbody id="wk-soon-tbl"></tbody>
-          </table></div>
-        </div>
-
-        <!-- THIS WEEK FAST MOVERS -->
-        <div class="card">
-          <div class="ct" style="color:var(--green-m)">🔥 Fast Movers This Week — top selling products</div>
-          <div class="tw"><table>
-            <thead><tr><th>#</th><th>Lot No.</th><th>Item</th><th>Brand</th><th>Category</th><th>Size</th><th>This Week</th><th>Last Week</th><th>Change</th></tr></thead>
-            <tbody id="wk-fast-tbl"></tbody>
-          </table></div>
-        </div>
-
-        <!-- SLOW MOVERS -->
-        <div class="card">
-          <div class="ct" style="color:var(--muted)">🐌 Slow Movers — purchased but not selling well</div>
-          <div class="tw"><table>
-            <thead><tr><th>Lot No.</th><th>Item</th><th>Supplier</th><th>Size</th><th>Purchased</th><th>Sold Total</th><th>Live Stock</th><th>Days Since Last Sale</th><th>Status</th></tr></thead>
-            <tbody id="wk-slow-tbl"></tbody>
-          </table></div>
-        </div>
-
-        <!-- OVERSTOCK -->
-        <div class="card">
-          <div class="ct" style="color:var(--purple-m)">📦 Overstock — bought too much, not selling enough</div>
-          <div id="wk-over-summary" style="margin-bottom:10px"></div>
-          <div class="tw"><table>
-            <thead><tr><th>Lot No.</th><th>Item</th><th>Supplier</th><th>Size</th><th>Purchased</th><th>Sold Total</th><th>Live Stock</th><th>Sell %</th><th>Value Stuck ₹</th><th>Weeks Cover</th><th>Suggestion</th></tr></thead>
-            <tbody id="wk-over-tbl"></tbody>
-          </table></div>
-        </div>
-
-        <!-- DEAD STOCK THIS WEEK -->
-        <div class="card">
-          <div class="ct" style="color:var(--red-m)">💀 Dead Stock — no sale for 90+ days</div>
-          <div id="wk-dead-summary" style="margin-bottom:10px"></div>
-          <div class="tw"><table>
-            <thead><tr><th>Lot No.</th><th>Item</th><th>Supplier</th><th>Size</th><th>Live Stock</th><th>Purchase Cost ₹</th><th>Value Blocked ₹</th><th>Days Unsold</th><th>Recommended Action</th></tr></thead>
-            <tbody id="wk-dead-tbl"></tbody>
-          </table></div>
-        </div>
-
-        <!-- WEEK SUMMARY -->
-        <div class="card" style="background:var(--blue-l);border-color:var(--blue-m)">
-          <div class="ct" style="color:var(--blue)">📊 Week Summary</div>
-          <div id="wk-summary"></div>
-        </div>
+        <div class="card"><div class="ct" style="color:var(--red-m)">🚨 Restock Urgently</div><div id="wk-urgent"></div><div class="tw" style="margin-top:10px"><table><thead><tr><th>Lot No.</th><th>Item</th><th>Supplier</th><th>Size</th><th>Sold This Week</th><th>Live Stock</th><th>Days Cover</th><th>Action</th></tr></thead><tbody id="wk-urgent-tbl"></tbody></table></div></div>
+        <div class="card"><div class="ct" style="color:var(--green-m)">🔥 Fast Movers This Week</div><div class="tw"><table><thead><tr><th>#</th><th>Lot No.</th><th>Item</th><th>Brand</th><th>Size</th><th>This Week</th><th>Last Week</th><th>Change</th></tr></thead><tbody id="wk-fast-tbl"></tbody></table></div></div>
+        <div class="card"><div class="ct" style="color:var(--red-m)">💀 Dead Stock</div><div id="wk-dead-summary" style="margin-bottom:10px"></div><div class="tw"><table><thead><tr><th>Lot No.</th><th>Item</th><th>Supplier</th><th>Size</th><th>Live Stock</th><th>Value ₹</th><th>Days Unsold</th><th>Action</th></tr></thead><tbody id="wk-dead-tbl"></tbody></table></div></div>
+        <div class="card" style="background:var(--blue-l);border-color:var(--blue-m)"><div class="ct" style="color:var(--blue)">📊 Week Summary</div><div id="wk-summary"></div></div>
       </div>
 
-      <!-- PURCHASE REGISTER -->
+      <!-- PURCHASE REG -->
       <div id="tab-purchase" class="tab">
         <div class="pg-title">Purchase Register</div>
-        <div class="pg-sub">All purchase entries from uploaded files</div>
+        <div class="pg-sub">All purchase entries</div>
         <div class="frow">
           <select class="fs" id="pur-sup" onchange="renderPur()"><option value="">All suppliers</option></select>
           <select class="fs" id="pur-item" onchange="renderPur()"><option value="">All items</option></select>
-          <input class="fsrch" id="pur-srch" placeholder="Search lot no / item..." oninput="renderPur()">
+          <input class="fsrch" id="pur-srch" placeholder="Search..." oninput="renderPur()">
         </div>
-        <div class="card" style="padding:0">
-          <div class="tw"><table>
-            <thead><tr><th>Date</th><th>Supplier</th><th>Item</th><th>Size</th><th>Lot No.</th><th>Qty</th><th>Rate ₹</th><th>Amount ₹</th></tr></thead>
-            <tbody id="pur-body"></tbody>
-          </table></div>
-        </div>
+        <div class="card" style="padding:0"><div class="tw"><table><thead><tr><th>Date</th><th>Supplier</th><th>Item</th><th>Size</th><th>Lot No.</th><th>Qty</th><th>Rate ₹</th><th>Amount ₹</th></tr></thead><tbody id="pur-body"></tbody></table></div></div>
       </div>
 
-      <!-- SALE REGISTER -->
+      <!-- SALE REG -->
       <div id="tab-sale" class="tab">
         <div class="pg-title">Sale Register</div>
-        <div class="pg-sub">All sale entries — negative qty shown as returns</div>
+        <div class="pg-sub">All sale entries</div>
         <div class="frow">
           <select class="fs" id="sal-br" onchange="renderSal()"><option value="">All brands</option></select>
           <select class="fs" id="sal-cat" onchange="renderSal()"><option value="">All categories</option></select>
-          <input class="fsrch" id="sal-srch" placeholder="Search item / lot no..." oninput="renderSal()">
+          <input class="fsrch" id="sal-srch" placeholder="Search..." oninput="renderSal()">
         </div>
-        <div class="card" style="padding:0">
-          <div class="tw"><table>
-            <thead><tr><th>Date</th><th>Brand</th><th>Category</th><th>Item</th><th>Size</th><th>Lot No.</th><th>Qty</th><th>Type</th></tr></thead>
-            <tbody id="sal-body"></tbody>
-          </table></div>
-        </div>
+        <div class="card" style="padding:0"><div class="tw"><table><thead><tr><th>Date</th><th>Brand</th><th>Category</th><th>Item</th><th>Size</th><th>Lot No.</th><th>Qty</th><th>Type</th></tr></thead><tbody id="sal-body"></tbody></table></div></div>
       </div>
 
-      <!-- UPLOAD (owner only) -->
+      <!-- UPLOAD -->
       <div id="tab-upload" class="tab">
         <div class="pg-title">Upload Files</div>
-        <div class="pg-sub">Upload as Owner — same format as staff upload</div>
+        <div class="pg-sub">Upload your Excel files</div>
         <div class="up-card">
           <div class="up-title">📥 Purchase Report</div>
-          <div class="up-sub">Daily purchase Excel — all bills of the day</div>
+          <div class="up-sub">Daily purchase Excel</div>
           <div class="drop-zone" onclick="document.getElementById('ofp').click()">
             <div class="drop-ico">📊</div><div class="drop-txt">Click to upload Purchase Excel</div>
             <span class="btn-up btn-blue">Choose File</span>
@@ -501,7 +520,7 @@ tbody tr:hover td{background:var(--bg)}
         </div>
         <div class="up-card">
           <div class="up-title">📤 Sale Report</div>
-          <div class="up-sub">Daily sale Excel — negative qty = return, handled automatically</div>
+          <div class="up-sub">Daily sale Excel</div>
           <div class="drop-zone" onclick="document.getElementById('ofs').click()">
             <div class="drop-ico">🧾</div><div class="drop-txt">Click to upload Sale Excel</div>
             <span class="btn-up btn-green">Choose File</span>
@@ -509,48 +528,27 @@ tbody tr:hover td{background:var(--bg)}
           <div class="up-stat" id="oss"></div>
           <input type="file" id="ofs" class="fi-hidden" accept=".xlsx,.xls,.csv" onchange="doUpload(this,'sale','oss')">
         </div>
-        <div class="card">
-          <div class="ct">Upload history</div>
-          <div id="ulog"></div>
-        </div>
+        <div class="card"><div class="ct">Upload history</div><div id="ulog"></div></div>
       </div>
 
-      <!-- SETTINGS (owner only) -->
+      <!-- SETTINGS -->
       <div id="tab-settings" class="tab">
         <div class="pg-title">Settings</div>
         <div class="pg-sub">User roles and data management</div>
         <div class="card">
-          <div class="ct">User accounts & permissions</div>
-          <div class="u-row">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="u-av" style="background:var(--blue-l);color:var(--blue)">O</div>
-              <div><div style="font-size:13px;font-weight:600">Owner</div><div style="font-size:11px;color:var(--muted)">All reports · Upload · Settings · Delete data</div></div>
-            </div><span class="tag tb">Owner</span>
-          </div>
-          <div class="u-row">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="u-av" style="background:var(--green-l);color:var(--green)">M</div>
-              <div><div style="font-size:13px;font-weight:600">Manager</div><div style="font-size:11px;color:var(--muted)">View all reports only — cannot upload or delete</div></div>
-            </div><span class="tag tg">Manager</span>
-          </div>
-          <div class="u-row">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="u-av" style="background:var(--amber-l);color:var(--amber)">S</div>
-              <div><div style="font-size:13px;font-weight:600">Staff</div><div style="font-size:11px;color:var(--muted)">Upload Excel only — cannot see any data at all</div></div>
-            </div><span class="tag ta">Staff</span>
-          </div>
-          <div style="margin-top:12px;padding:9px;background:var(--surf2);border-radius:var(--r);font-size:11px;color:var(--muted)">
-            To change passwords → open <code style="font-family:'DM Mono',monospace">server.js</code> → find USERS section → change password → click Run.
-          </div>
+          <div class="ct">User accounts</div>
+          <div class="u-row"><div style="display:flex;align-items:center;gap:10px"><div class="u-av" style="background:var(--blue-l);color:var(--blue)">O</div><div><div style="font-size:13px;font-weight:600">Owner</div><div style="font-size:11px;color:var(--muted)">All reports · Upload · Settings</div></div></div><span class="tag tb">Owner</span></div>
+          <div class="u-row"><div style="display:flex;align-items:center;gap:10px"><div class="u-av" style="background:var(--green-l);color:var(--green)">M</div><div><div style="font-size:13px;font-weight:600">Manager</div><div style="font-size:11px;color:var(--muted)">View reports only</div></div></div><span class="tag tg">Manager</span></div>
+          <div class="u-row"><div style="display:flex;align-items:center;gap:10px"><div class="u-av" style="background:var(--amber-l);color:var(--amber)">S</div><div><div style="font-size:13px;font-weight:600">Staff</div><div style="font-size:11px;color:var(--muted)">Upload only</div></div></div><span class="tag ta">Staff</span></div>
         </div>
         <div class="card">
           <div class="ct">Data management</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-            <button class="btn-sm btn-danger" onclick="clearData('purchase')">Clear All Purchase Data</button>
-            <button class="btn-sm btn-danger" onclick="clearData('sale')">Clear All Sale Data</button>
-            <button class="btn-sm btn-danger" onclick="clearData('returns')">Clear All Returns Data</button>
+            <button class="btn-sm btn-danger" onclick="clearData('purchase')">Clear Purchase Data</button>
+            <button class="btn-sm btn-danger" onclick="clearData('sale')">Clear Sale Data</button>
+            <button class="btn-sm btn-danger" onclick="clearData('returns')">Clear Returns Data</button>
           </div>
-          <div style="font-size:11px;color:var(--muted)">Warning: This permanently deletes all records of that type.</div>
+          <div style="font-size:11px;color:var(--muted)">Warning: Permanent delete.</div>
         </div>
       </div>
 
@@ -560,16 +558,10 @@ tbody tr:hover td{background:var(--bg)}
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════════
 let G = { purchase:[], sale:[], returns:[] };
 let charts = {};
 let currentRole = '';
 
-// ═══════════════════════════════════════════════════════
-// AUTH
-// ═══════════════════════════════════════════════════════
 async function doLogin() {
   const u = document.getElementById('uname').value.trim();
   const p = document.getElementById('upass').value;
@@ -580,97 +572,55 @@ async function doLogin() {
     const d = await r.json();
     if (!d.success) { err.textContent = d.error; err.style.display = 'block'; return; }
     currentRole = d.role;
-    if (d.role === 'staff') showStaff(d);
-    else showDash(d);
+    if (d.role === 'staff') showStaff(d); else showDash(d);
   } catch { err.textContent = 'Connection error. Try again.'; err.style.display = 'block'; }
 }
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('upass').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
 });
 async function doLogout() { await fetch('/api/logout',{method:'POST'}); location.reload(); }
-
-function showStaff(d) {
-  document.getElementById('st-av').textContent = d.name[0].toUpperCase();
-  document.getElementById('st-name').textContent = d.name;
-  showPage('pg-staff');
-}
+function showStaff(d) { document.getElementById('st-av').textContent = d.name[0].toUpperCase(); document.getElementById('st-name').textContent = d.name; showPage('pg-staff'); }
 function showDash(d) {
   document.getElementById('dav').textContent = d.name[0].toUpperCase();
   document.getElementById('dname').textContent = d.name;
   document.getElementById('drole').textContent = d.role.charAt(0).toUpperCase()+d.role.slice(1);
-  if (d.role === 'manager') {
-    document.getElementById('sb-upload').style.display = 'none';
-    document.getElementById('sb-settings').style.display = 'none';
-  }
+  if (d.role === 'manager') { document.getElementById('sb-upload').style.display = 'none'; document.getElementById('sb-settings').style.display = 'none'; }
   showPage('pg-dash');
   loadData();
 }
-function showPage(id) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
+function showPage(id) { document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+(async()=>{ try { const r = await fetch('/api/me'); const d = await r.json(); if (d.loggedIn) { currentRole=d.role; if(d.role==='staff') showStaff(d); else showDash(d); } } catch {} })();
 
-// Check session on load
-(async()=>{
-  try {
-    const r = await fetch('/api/me');
-    const d = await r.json();
-    if (d.loggedIn) { currentRole=d.role; if(d.role==='staff') showStaff(d); else showDash(d); }
-  } catch {}
-})();
-
-// ═══════════════════════════════════════════════════════
-// UPLOAD
-// ═══════════════════════════════════════════════════════
 function dzo(e,t){e.preventDefault();document.getElementById('dz-'+t).classList.add('drag');}
 function dzl(t){document.getElementById('dz-'+t)?.classList.remove('drag');}
-function dzd(e,t){
-  e.preventDefault();dzl(t);
-  const f=e.dataTransfer.files[0];
-  if(!f)return;
-  const map={p:'purchase',s:'sale'};
-  const inp=document.getElementById('f'+t);
-  inp._f=f;
-  doUpload(inp,map[t],'s'+t);
-}
+function dzd(e,t){ e.preventDefault();dzl(t); const f=e.dataTransfer.files[0]; if(!f)return; const map={p:'purchase',s:'sale'}; const inp=document.getElementById('f'+t); inp._f=f; doUpload(inp,map[t],'s'+t); }
 
 async function doUpload(input, type, statId) {
   const file = input._f || input.files[0];
   if (!file) return;
   const st = document.getElementById(statId);
   st.className='up-stat st-loading'; st.textContent='Uploading and reading file...'; st.style.display='block';
-
   const fd = new FormData();
   fd.append('file', file, file.name);
   try {
     const r = await fetch('/api/upload/'+type, {method:'POST',body:fd});
     const d = await r.json();
     if (d.success) {
-      let msg = '✓ File uploaded successfully — ';
+      let msg = '✓ File uploaded — ';
       if (type==='purchase') msg += d.purchaseRows+' purchase rows saved';
       else msg += d.saleRows+' sale rows'+(d.convertedRows?' + '+d.convertedRows+' auto-converted rows':'')+' saved';
-      st.className='up-stat st-ok'; st.textContent=msg;
+      if (d.skippedRows) msg += ' | ⚠️ '+d.skippedRows+' duplicate rows skipped';
+      st.className='up-stat '+(d.skippedRows>0?'st-loading':'st-ok'); st.textContent=msg;
       if (currentRole!=='staff') { loadData(); loadUlog(); }
     } else {
       st.className='up-stat st-err'; st.textContent='✗ Error: '+(d.error||'Upload failed');
     }
-  } catch {
-    st.className='up-stat st-err'; st.textContent='✗ Connection error. Try again.';
-  }
+  } catch { st.className='up-stat st-err'; st.textContent='✗ Connection error. Try again.'; }
   st.style.display='block';
   input.value=''; input._f=null;
 }
 
-// ═══════════════════════════════════════════════════════
-// DATA LOAD
-// ═══════════════════════════════════════════════════════
-async function loadData() {
-  try {
-    const r = await fetch('/api/data');
-    G = await r.json();
-    buildAll();
-  } catch(e) { console.error(e); }
-}
+async function loadData() { try { const r = await fetch('/api/data'); G = await r.json(); buildAll(); } catch(e) { console.error(e); } }
 
 async function loadUlog() {
   try {
@@ -690,65 +640,88 @@ async function loadUlog() {
   } catch {}
 }
 
-// ═══════════════════════════════════════════════════════
-// COMPUTED STATS
-// ═══════════════════════════════════════════════════════
 function getArtStats() {
   const m = {};
   G.purchase.forEach(r => {
     const k = (r.lotNo||'')+'|'+(r.item||'')+'|'+(r.size||'');
-    if (!m[k]) m[k] = { lotNo:r.lotNo, item:r.item, supplier:'', brand:'', size:r.size,
-      purchased:0, purchaseCost:0, grossSold:0, returned:0, saleDates:[] };
+    if (!m[k]) m[k] = { lotNo:r.lotNo, item:r.item, supplier:r.supplier||r.brand||'', brand:r.brand||'', size:r.size,
+      purchased:0, purchaseCost:0, grossSold:0, returned:0, saleDates:[], purchaseDates:[] };
     m[k].purchased += r.qty;
     m[k].purchaseCost += r.qty * (r.rate||0);
-    // Purchase supplier always wins — it's the real supplier
-    if (r.supplier) m[k].supplier = r.supplier;
-    if (r.brand) m[k].brand = r.brand;
+    if (r.date) m[k].purchaseDates.push(new Date(r.date));
+    if (!m[k].supplier && r.supplier) m[k].supplier = r.supplier;
+    if (!m[k].brand && r.brand) m[k].brand = r.brand;
   });
   G.sale.forEach(r => {
     const k = (r.lotNo||'')+'|'+(r.item||'')+'|'+(r.size||'');
-    if (!m[k]) m[k] = { lotNo:r.lotNo, item:r.item, supplier:'', brand:'', size:r.size,
-      purchased:0, purchaseCost:0, grossSold:0, returned:0, saleDates:[] };
+    if (!m[k]) m[k] = { lotNo:r.lotNo, item:r.item, supplier:r.brand||r.supplier||'', brand:r.brand||'', size:r.size,
+      purchased:0, purchaseCost:0, grossSold:0, returned:0, saleDates:[], purchaseDates:[] };
     m[k].grossSold += r.qty;
-    if (r.date) m[k].saleDates.push(new Date(r.date));
-    // Only fill brand from sale if purchase didn't already set it
+    if (r.date) m[k].saleDates.push({date:new Date(r.date), qty:r.qty});
     if (!m[k].brand && r.brand) m[k].brand = r.brand;
-    // Only fill supplier from sale if purchase didn't already set it
-    if (!m[k].supplier && r.supplier) m[k].supplier = r.supplier;
   });
   G.returns.forEach(r => {
     const k = (r.lotNo||'')+'|'+(r.item||'')+'|'+(r.size||'');
-    if (!m[k]) m[k] = { lotNo:r.lotNo, item:r.item, supplier:'', brand:'', size:r.size,
-      purchased:0, purchaseCost:0, grossSold:0, returned:0, saleDates:[] };
+    if (!m[k]) m[k] = { lotNo:r.lotNo, item:r.item, supplier:r.brand||r.supplier||'', brand:r.brand||'', size:r.size,
+      purchased:0, purchaseCost:0, grossSold:0, returned:0, saleDates:[], purchaseDates:[] };
     m[k].returned += r.qty;
-    if (!m[k].brand && r.brand) m[k].brand = r.brand;
-    if (!m[k].supplier && r.supplier) m[k].supplier = r.supplier;
   });
   return Object.values(m).map(a => {
     a.netSold     = Math.max(0, a.grossSold - a.returned);
-    a.liveStock   = Math.max(0, a.purchased - a.netSold);
-    a.lastSale    = a.saleDates.length ? new Date(Math.max(...a.saleDates)) : null;
+    const rawDiff = a.purchased - a.netSold;
+    a.liveStock   = Math.max(0, rawDiff);
+    a.oversold    = rawDiff < 0 ? -rawDiff : 0;
+    a.lastSale    = a.saleDates.length ? new Date(Math.max(...a.saleDates.map(s=>s.date))) : null;
+    a.firstPurchase = a.purchaseDates.length ? new Date(Math.min(...a.purchaseDates)) : null;
     a.daysSince   = a.lastSale ? Math.max(0,Math.round((new Date()-a.lastSale)/86400000)) : 9999;
     a.avgCost     = a.purchased > 0 ? a.purchaseCost / a.purchased : 0;
     a.stockVal    = a.liveStock * a.avgCost;
+    // Days to sell first batch: from first purchase to when a.purchased qty was reached in sales
+    if (a.firstPurchase && a.saleDates.length) {
+      const sorted = a.saleDates.slice().sort((x,y)=>x.date-y.date);
+      let cumSold = 0, daysToSell = null;
+      for (const s of sorted) {
+        cumSold += s.qty;
+        if (cumSold >= a.purchased) {
+          daysToSell = Math.max(1, Math.round((s.date - a.firstPurchase)/86400000));
+          break;
+        }
+      }
+      a.daysToSell = daysToSell;
+    } else {
+      a.daysToSell = null;
+    }
     return a;
   });
 }
 
 function getBrandStats() {
   const m = {};
+  // Build supplier map from purchase data
+  const brandSupplier = {};
+  // First: add ALL brands from purchase data (so purchase-only brands appear)
+  G.purchase.forEach(r => {
+    const brand = r.brand||'Unknown';
+    if (r.brand && r.supplier) brandSupplier[r.brand] = r.supplier;
+    if (!m[brand]) m[brand]={brand:brand, supplier:'', grossSold:0, returned:0, purchased:0, liveStock:0};
+    m[brand].purchased += r.qty;
+  });
+  // Then: add sale data
   G.sale.forEach(r => {
-    const k = (r.brand||'Unknown')+'|'+(r.category||'General');
-    if (!m[k]) m[k]={brand:r.brand||'Unknown',category:r.category||'General',grossSold:0,returned:0};
-    m[k].grossSold += r.qty;
+    const brand = r.brand||'Unknown';
+    if (!m[brand]) m[brand]={brand:brand, supplier:'', grossSold:0, returned:0, purchased:0, liveStock:0};
+    m[brand].grossSold += r.qty;
   });
   G.returns.forEach(r => {
-    const k = (r.brand||'Unknown')+'|'+(r.category||'General');
-    if (!m[k]) m[k]={brand:r.brand||'Unknown',category:r.category||'General',grossSold:0,returned:0};
-    m[k].returned += r.qty;
+    const brand = r.brand||'Unknown';
+    if (!m[brand]) m[brand]={brand:brand, supplier:'', grossSold:0, returned:0, purchased:0, liveStock:0};
+    m[brand].returned += r.qty;
   });
+  // Set supplier from map
+  Object.values(m).forEach(b => { if (brandSupplier[b.brand]) b.supplier = brandSupplier[b.brand]; });
   return Object.values(m).map(b=>{
     b.netSold=Math.max(0,b.grossSold-b.returned);
+    b.liveStock=Math.max(0,b.purchased-b.netSold);
     b.retRate=b.grossSold>0?Math.round(b.returned/b.grossSold*100):0;
     return b;
   }).sort((a,b)=>b.netSold-a.netSold);
@@ -756,56 +729,26 @@ function getBrandStats() {
 
 function getMonthly() {
   const m = {};
-  G.purchase.forEach(r => {
-    if (!r.date) return;
-    const k = r.date.substring(0,7);
-    if (!m[k]) m[k]={label:new Date(r.date+'T00:00:00').toLocaleString('en-IN',{month:'short',year:'2-digit'}),purchase:0,sale:0};
-    m[k].purchase += r.qty;
-  });
-  G.sale.forEach(r => {
-    if (!r.date) return;
-    const k = r.date.substring(0,7);
-    if (!m[k]) m[k]={label:new Date(r.date+'T00:00:00').toLocaleString('en-IN',{month:'short',year:'2-digit'}),purchase:0,sale:0};
-    m[k].sale += r.qty;
-  });
+  G.purchase.forEach(r => { if (!r.date) return; const k = r.date.substring(0,7); if (!m[k]) m[k]={label:new Date(r.date+'T00:00:00').toLocaleString('en-IN',{month:'short',year:'2-digit'}),purchase:0,sale:0}; m[k].purchase += r.qty; });
+  G.sale.forEach(r => { if (!r.date) return; const k = r.date.substring(0,7); if (!m[k]) m[k]={label:new Date(r.date+'T00:00:00').toLocaleString('en-IN',{month:'short',year:'2-digit'}),purchase:0,sale:0}; m[k].sale += r.qty; });
   return Object.entries(m).sort((a,b)=>a[0]>b[0]?1:-1).map(([_,v])=>v);
 }
 
-// ═══════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════
 const CLRS = ['#2f6fd4','#18a05a','#d85a30','#6a58d0','#e89008','#d4537e','#0a6b3a','#1a4a8a'];
-function speedTag(d) {
-  if(d<7)  return '<span class="tag tg">Super Fast</span>';
-  if(d<30) return '<span class="tag tb">Fast</span>';
-  if(d<90) return '<span class="tag ta">Slow</span>';
-  return '<span class="tag tr">Dead Stock</span>';
-}
-function avgDayTag(a) {
-  const d = a.netSold>0&&a.saleDates?.length>1?(Math.max(...a.saleDates)-Math.min(...a.saleDates))/86400000/a.netSold:30;
-  return speedTag(d);
-}
-function mkBars(elId,data,lk,vk,colors){
-  const max=Math.max(...data.map(d=>d[vk]),1);
-  document.getElementById(elId).innerHTML=data.slice(0,8).map((d,i)=>`
-    <div class="bar-row">
-      <div class="rk ${i<3?'r'+(i+1):'rn'}">${i+1}</div>
-      <div class="bl" title="${d[lk]}">${d[lk]}</div>
-      <div class="bt"><div class="bf" style="width:${Math.round(d[vk]/max*100)}%;background:${colors?colors[i%colors.length]:CLRS[i%8]}"></div></div>
-      <div class="bv">${d[vk]}</div>
-    </div>`).join('')||'<div class="empty">No data</div>';
-}
+function speedTag(d) { if(d<7) return '<span class="tag tg">Super Fast</span>'; if(d<30) return '<span class="tag tb">Fast</span>'; if(d<90) return '<span class="tag ta">Slow</span>'; return '<span class="tag tr">Dead Stock</span>'; }
+function avgDayTag(a) { const d = a.netSold>0&&a.saleDates?.length>1?(Math.max(...a.saleDates.map(s=>s.date))-Math.min(...a.saleDates.map(s=>s.date)))/86400000/a.netSold:30; return speedTag(d); }
+function mkBars(elId,data,lk,vk,colors){ const max=Math.max(...data.map(d=>d[vk]),1); document.getElementById(elId).innerHTML=data.slice(0,8).map((d,i)=>`<div class="bar-row"><div class="rk ${i<3?'r'+(i+1):'rn'}">${i+1}</div><div class="bl" title="${d[lk]}">${d[lk]}</div><div class="bt"><div class="bf" style="width:${Math.round(d[vk]/max*100)}%;background:${colors?colors[i%colors.length]:CLRS[i%8]}"></div></div><div class="bv">${d[vk]}</div></div>`).join('')||'<div class="empty">No data</div>'; }
 function mkChart(id,cfg){if(charts[id])charts[id].destroy();const el=document.getElementById(id);if(el)charts[id]=new Chart(el,cfg);}
 function setMG(id,items){document.getElementById(id).innerHTML=items.map(m=>`<div class="mc"><div class="ml">${m.l}</div><div class="mv">${m.v}</div>${m.s?`<div class="ms ${m.c||''}">${m.s}</div>`:''}</div>`).join('');}
 function noData(cols){return `<tr><td colspan="${cols}" class="empty">No data yet — upload your Excel files</td></tr>`;}
 
-// ═══════════════════════════════════════════════════════
-// BUILD ALL
-// ═══════════════════════════════════════════════════════
 function buildAll() {
   populateFilters();
   buildOverview();
   buildInventory();
+  buildReorder();
+  buildCompanyStock();
+  buildSupplierStock();
   buildFastMovers();
   buildBrands();
   buildReturns();
@@ -821,22 +764,44 @@ function buildOverview() {
   const totPurchQty = G.purchase.reduce((s,r)=>s+r.qty,0);
   const totSaleQty  = G.sale.reduce((s,r)=>s+r.qty,0);
   const totRetQty   = G.returns.reduce((s,r)=>s+r.qty,0);
-  const totStock    = arts.reduce((s,a)=>s+a.liveStock,0);
+  const totStockClamped = arts.reduce((s,a)=>s+a.liveStock,0);
+  const totOversold     = arts.reduce((s,a)=>s+(a.oversold||0),0);
+  const totStockTrue    = totStockClamped - totOversold;
   const totStockVal = arts.reduce((s,a)=>s+a.stockVal,0);
   const dead        = arts.filter(a=>a.daysSince>=90&&a.liveStock>0).length;
+  const mismatchArts = arts.filter(a=>a.oversold>0).length;
 
-  document.getElementById('ov-sub').innerHTML =
-    `<span style="color:var(--green);font-weight:600">● Data saved permanently</span> &nbsp;·&nbsp;
-     ${G.purchase.length} purchase rows &nbsp;·&nbsp; ${G.sale.length} sale rows &nbsp;·&nbsp; ${G.returns.length} returns`;
+  document.getElementById('ov-sub').innerHTML = `<span style="color:var(--green);font-weight:600">● Data saved permanently</span> &nbsp;·&nbsp; ${G.purchase.length} purchase rows &nbsp;·&nbsp; ${G.sale.length} sale rows &nbsp;·&nbsp; ${G.returns.length} returns`;
+  const liveStockSub = totOversold > 0 ? `⚠ ${totOversold.toLocaleString()} phantom units hidden` : '';
 
   setMG('ov-m',[
     {l:'Total purchased (qty)', v:totPurchQty.toLocaleString()},
     {l:'Total sold (net qty)',  v:(totSaleQty-totRetQty).toLocaleString()},
     {l:'Total returns',        v:totRetQty, s:'restocked automatically', c:'pu'},
-    {l:'Live stock (units)',   v:totStock.toLocaleString()},
+    {l:'Live stock (units)',   v:totStockTrue.toLocaleString(), s:liveStockSub, c:totOversold>0?'dn':''},
     {l:'Stock value',          v:'₹'+Math.round(totStockVal).toLocaleString('en-IN')},
     {l:'Dead stock items',     v:dead, s:'90+ days unsold', c:'dn'},
   ]);
+
+  const healthEl = document.getElementById('data-health');
+  if (healthEl) {
+    if (mismatchArts === 0) {
+      healthEl.innerHTML = '<div style="font-size:12px;color:var(--green-m);font-weight:600">✓ All sales match purchase records — data is clean.</div>';
+    } else {
+      const bad = arts.filter(a=>a.oversold>0).sort((a,b)=>b.oversold-a.oversold).slice(0,20);
+      healthEl.innerHTML = `
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+          <div style="padding:8px 14px;background:var(--red-l);border-radius:var(--r);font-size:12px;color:var(--red-m);font-weight:700">${mismatchArts} articles sold more than purchased</div>
+          <div style="padding:8px 14px;background:var(--red-l);border-radius:var(--r);font-size:12px;color:var(--red-m);font-weight:700">${totOversold.toLocaleString()} phantom units</div>
+          <div style="padding:8px 14px;background:var(--amber-l);border-radius:var(--r);font-size:12px;color:var(--amber);font-weight:600">Likely: opening stock not entered, mismatched lot/item/size, missing bills</div>
+        </div>
+        <div class="tw"><table><thead><tr><th>Lot no</th><th>Item</th><th>Size</th><th>Purchased</th><th>Net sold</th><th>Phantom</th><th>Brand/Supplier</th></tr></thead>
+          <tbody>${bad.map(a=>`<tr><td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td><td style="font-weight:700">${a.item||'—'}</td><td>${a.size||'—'}</td><td>${a.purchased}</td><td>${a.netSold}</td><td style="font-weight:700;color:var(--red-m)">+${a.oversold}</td><td>${a.brand||a.supplier||'—'}</td></tr>`).join('')}</tbody>
+        </table></div>
+        ${mismatchArts>20?`<div style="font-size:11px;color:var(--muted);margin-top:8px">Showing worst 20 of ${mismatchArts}.</div>`:''}
+      `;
+    }
+  }
 
   const itemSold={};
   G.sale.forEach(r=>{const k=r.item||'Unknown';if(!itemSold[k])itemSold[k]={item:k,qty:0};itemSold[k].qty+=r.qty;});
@@ -847,10 +812,9 @@ function buildOverview() {
   const ins=[];
   const topItem=Object.values(itemSold).sort((a,b)=>b.qty-a.qty)[0];
   if(topItem) ins.push({i:'🔥',t:`${topItem.item} is your fastest selling item`,s:`${topItem.qty} net units sold`});
+  if(mismatchArts) ins.push({i:'🧾',t:`${mismatchArts} articles sold without matching purchases`,s:`${totOversold.toLocaleString()} phantom units — check Data Health below`});
   if(dead) ins.push({i:'⚠️',t:`${dead} articles unsold for 90+ days`,s:`₹${Math.round(arts.filter(a=>a.daysSince>=90&&a.liveStock>0).reduce((s,a)=>s+a.stockVal,0)).toLocaleString('en-IN')} capital blocked`});
-  if(totRetQty) ins.push({i:'🔄',t:`${totRetQty} units returned by customers`,s:'All restocked in live inventory automatically'});
-  const lowStock=arts.filter(a=>a.liveStock>0&&a.liveStock<=3&&a.grossSold>0)[0];
-  if(lowStock) ins.push({i:'🚨',t:`${lowStock.lotNo||lowStock.item} is critically low`,s:`Only ${lowStock.liveStock} units left`});
+  if(totRetQty) ins.push({i:'🔄',t:`${totRetQty} units returned by customers`,s:'All restocked automatically'});
   const topBr=brs[0];
   if(topBr) ins.push({i:'💡',t:`${topBr.brand} is your top selling brand`,s:`${topBr.netSold} net units sold`});
   document.getElementById('insights').innerHTML=ins.map(i=>`<div class="ins"><div class="ins-i">${i.i}</div><div><div class="ins-t">${i.t}</div><div class="ins-s">${i.s}</div></div></div>`).join('')||'<div class="empty">Upload files to see insights</div>';
@@ -860,8 +824,11 @@ function buildOverview() {
 
 function buildInventory() {
   const arts=getArtStats();
+  const clamped = arts.reduce((s,a)=>s+a.liveStock,0);
+  const oversold = arts.reduce((s,a)=>s+(a.oversold||0),0);
+  const trueStock = clamped - oversold;
   setMG('inv-m',[
-    {l:'Total live stock',     v:arts.reduce((s,a)=>s+a.liveStock,0).toLocaleString()+' units'},
+    {l:'Total live stock',     v:trueStock.toLocaleString()+' units', s:oversold>0?`⚠ ${oversold.toLocaleString()} phantom units`:'', c:oversold>0?'dn':''},
     {l:'Stock value',          v:'₹'+Math.round(arts.reduce((s,a)=>s+a.stockVal,0)).toLocaleString('en-IN')},
     {l:'Out of stock',         v:arts.filter(a=>a.liveStock===0).length, c:'dn'},
     {l:'Low stock (≤5)',       v:arts.filter(a=>a.liveStock>0&&a.liveStock<=5).length, c:'dn'},
@@ -874,71 +841,357 @@ function renderInv() {
   const arts=getArtStats().sort((a,b)=>b.liveStock-a.liveStock);
   const catF=document.getElementById('inv-cat').value;
   const supF=document.getElementById('inv-sup').value;
+  const brF=document.getElementById('inv-brand').value;
   const stkF=document.getElementById('inv-stk').value;
   const srch=document.getElementById('inv-srch').value.toLowerCase();
   const f=arts.filter(a=>{
     if(catF&&(a.item||'')!==catF) return false;
-    if(supF&&(a.supplier||'')!==supF&&(a.brand||'')!==supF) return false;
+    if(supF&&(a.supplier||'')!==supF) return false;
+    if(brF&&(a.brand||'')!==brF) return false;
     if(stkF==='out'&&a.liveStock!==0) return false;
     if(stkF==='low'&&(a.liveStock<1||a.liveStock>5)) return false;
     if(stkF==='ok'&&a.liveStock<6) return false;
-    if(srch&&!(a.lotNo||'').toLowerCase().includes(srch)&&!(a.item||'').toLowerCase().includes(srch)&&!(a.supplier||'').toLowerCase().includes(srch)) return false;
+    if(srch&&!(a.lotNo||'').toLowerCase().includes(srch)&&!(a.item||'').toLowerCase().includes(srch)) return false;
     return true;
   });
   document.getElementById('inv-body').innerHTML=f.slice(0,300).map(a=>`<tr>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
     <td style="font-weight:600">${a.item||'—'}</td>
-    <td>${a.supplier||a.brand||'—'}</td>
+    <td>${a.brand||'—'}</td>
+    <td>${a.supplier||'—'}</td>
     <td>${a.size||'—'}</td>
     <td>${a.purchased}</td><td>${a.grossSold}</td>
     <td style="${a.returned>0?'color:var(--purple-m);font-weight:600':''}">${a.returned}</td>
     <td style="font-weight:700;color:${a.liveStock===0?'var(--red-m)':a.liveStock<=5?'var(--amber-m)':'var(--green-m)'}">${a.liveStock}</td>
     <td>₹${Math.round(a.avgCost)}</td>
     <td>₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td>
-    <td><span class="tag ${a.liveStock===0?'tr':a.liveStock<=5?'ta':'tg'}">${a.liveStock===0?'Out of stock':a.liveStock<=5?'Low stock':'In stock'}</span></td>
-  </tr>`).join('')||noData(11);
+    <td><span class="tag ${a.liveStock===0?'tr':a.liveStock<=5?'ta':'tg'}">${a.liveStock===0?'Out':a.liveStock<=5?'Low':'In stock'}</span></td>
+  </tr>`).join('')||noData(12);
+}
+
+// ═══════ REORDER SHEET ═══════
+function buildReorder() { renderReorder(); }
+
+function renderReorder() {
+  const days = parseInt(document.getElementById('ro-days').value) || 30;
+  const brF = document.getElementById('ro-brand').value;
+  const supF = document.getElementById('ro-sup').value;
+  const speedF = document.getElementById('ro-speed').value;
+  const srch = document.getElementById('ro-srch').value.toLowerCase();
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+
+  const arts = getArtStats();
+  // Filter: must have purchases AND must have sold within last N days
+  const reorderItems = arts.filter(a => {
+    if (a.purchased <= 0) return false;
+    if (!a.saleDates.length) return false;
+    const soldInWindow = a.saleDates.some(s => s.date >= cutoff);
+    if (!soldInWindow) return false;
+    return true;
+  }).map(a => {
+    const soldInPeriod = a.saleDates.filter(s => s.date >= cutoff).reduce((sum,s)=>sum+s.qty, 0);
+    // Speed classification:
+    // Super fast: sold all purchased qty within 20 days → 2× reorder
+    // Normal: sold in more than 20 days → 1× reorder
+    let reorderMultiplier = 1;
+    let speedClass = 'fast';
+    if (a.daysToSell !== null && a.daysToSell <= 20) {
+      reorderMultiplier = 2;
+      speedClass = 'super';
+    }
+    return {
+      ...a,
+      soldInPeriod,
+      reorderMultiplier,
+      speedClass,
+      reorderQty: a.purchased * reorderMultiplier,
+    };
+  }).sort((a,b) => b.soldInPeriod - a.soldInPeriod);
+
+  // Apply filters
+  const filtered = reorderItems.filter(r => {
+    if (brF && (r.brand||'') !== brF) return false;
+    if (supF && (r.supplier||'') !== supF) return false;
+    if (speedF && r.speedClass !== speedF) return false;
+    if (srch && !(r.lotNo||'').toLowerCase().includes(srch) && !(r.item||'').toLowerCase().includes(srch)) return false;
+    return true;
+  });
+
+  const superFastCount = filtered.filter(r=>r.speedClass==='super').length;
+  const fastCount = filtered.filter(r=>r.speedClass==='fast').length;
+  const totalReorderQty = filtered.reduce((s,r)=>s+r.reorderQty, 0);
+
+  setMG('ro-m',[
+    {l:'Items to reorder',     v:filtered.length},
+    {l:'Super fast (2×)',     v:superFastCount, s:'sold in ≤20 days', c:'up'},
+    {l:'Normal (1×)',          v:fastCount, s:'sold in >20 days', c:'up'},
+    {l:'Total reorder qty',   v:totalReorderQty.toLocaleString()},
+  ]);
+
+  document.getElementById('ro-body').innerHTML = filtered.slice(0, 500).map(r => {
+    const speedBadge = r.speedClass === 'super'
+      ? '<span class="tag tg">🔥 Super Fast (2×)</span>'
+      : '<span class="tag tb">Normal (1×)</span>';
+    const daysDisplay = r.daysToSell !== null ? r.daysToSell + ' days' : '—';
+    return `<tr>
+      <td style="font-family:'DM Mono',monospace;font-size:10px">${r.lotNo||'—'}</td>
+      <td style="font-weight:600">${r.item||'—'}</td>
+      <td>${r.brand||'—'}</td>
+      <td>${r.supplier||'—'}</td>
+      <td>${r.size||'—'}</td>
+      <td>${r.purchased}</td>
+      <td>${r.netSold}</td>
+      <td style="font-weight:600;color:var(--green-m)">${r.soldInPeriod}</td>
+      <td>${daysDisplay}</td>
+      <td style="font-weight:700;color:${r.liveStock===0?'var(--red-m)':r.liveStock<=5?'var(--amber-m)':'var(--green-m)'}">${r.liveStock}</td>
+      <td>${speedBadge}</td>
+      <td style="font-weight:700;background:var(--green-l);color:var(--green)">${r.reorderQty}</td>
+    </tr>`;
+  }).join('') || noData(12);
+}
+
+// ═══════ COMPANY-WISE STOCK ═══════
+function buildCompanyStock() { renderCompanyStock(); }
+
+function renderCompanyStock() {
+  const srch = document.getElementById('cw-srch').value.toLowerCase();
+  const sort = document.getElementById('cw-sort').value;
+
+  const arts = getArtStats();
+  const byCompany = {};
+  arts.forEach(a => {
+    const brand = a.brand || 'Unknown';
+    if (!byCompany[brand]) byCompany[brand] = { brand, articles:[], totalStock:0, totalValue:0, totalPurchased:0, totalSold:0 };
+    byCompany[brand].articles.push(a);
+    byCompany[brand].totalStock += a.liveStock;
+    byCompany[brand].totalValue += a.stockVal;
+    byCompany[brand].totalPurchased += a.purchased;
+    byCompany[brand].totalSold += a.netSold;
+  });
+
+  let groups = Object.values(byCompany);
+  if (srch) groups = groups.filter(g => g.brand.toLowerCase().includes(srch));
+  if (sort === 'stock') groups.sort((a,b)=>b.totalStock-a.totalStock);
+  else if (sort === 'value') groups.sort((a,b)=>b.totalValue-a.totalValue);
+  else if (sort === 'sold') groups.sort((a,b)=>b.totalSold-a.totalSold);
+  else if (sort === 'name') groups.sort((a,b)=>a.brand.localeCompare(b.brand));
+
+  setMG('cw-m',[
+    {l:'Total companies',  v:groups.length},
+    {l:'Total stock',      v:groups.reduce((s,g)=>s+g.totalStock,0).toLocaleString()+' units'},
+    {l:'Unsold stock value',      v:'₹'+Math.round(groups.reduce((s,g)=>s+g.totalValue,0)).toLocaleString('en-IN'), s:'value of items NOT yet sold'},
+    {l:'Top company',      v:groups[0]?groups[0].brand:'—', s:groups[0]?groups[0].totalStock+' units':''},
+  ]);
+
+  document.getElementById('cw-list').innerHTML = groups.map((g, idx) => `
+    <div class="group-card">
+      <div class="group-head" onclick="toggleGroup('cw-body-${idx}', this.querySelector('.chev'))">
+        <div>
+          <div class="group-title">${g.brand}</div>
+          <div class="group-stats">
+            <span><span class="group-stat-val">${g.articles.length}</span> items</span>
+            <span><span class="group-stat-val">${g.totalStock.toLocaleString()}</span> in stock</span>
+            <span><span class="group-stat-val">${g.totalPurchased.toLocaleString()}</span> purchased</span>
+            <span><span class="group-stat-val">${g.totalSold.toLocaleString()}</span> sold</span>
+            <span>Unsold Value <span class="group-stat-val">₹${Math.round(g.totalValue).toLocaleString('en-IN')}</span></span>
+          </div>
+        </div>
+        <div class="chev">▶</div>
+      </div>
+      <div class="group-body" id="cw-body-${idx}">
+        <div class="tw"><table>
+          <thead><tr><th>Lot No.</th><th>Item</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Live Stock</th><th>Avg Cost</th><th>Unsold Value</th></tr></thead>
+          <tbody>${g.articles.sort((a,b)=>b.liveStock-a.liveStock).map(a=>`<tr>
+            <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
+            <td style="font-weight:600">${a.item||'—'}</td>
+            <td>${a.size||'—'}</td>
+            <td>${a.purchased}</td>
+            <td>${a.netSold}</td>
+            <td style="font-weight:700;color:${a.liveStock===0?'var(--red-m)':a.liveStock<=5?'var(--amber-m)':'var(--green-m)'}">${a.liveStock}</td>
+            <td>₹${Math.round(a.avgCost)}</td>
+            <td style="font-weight:600">₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </div>
+    </div>
+  `).join('') || '<div class="empty">No company data yet — upload files</div>';
+}
+
+function toggleGroup(id, chev) {
+  const el = document.getElementById(id);
+  if (el) { el.classList.toggle('open'); chev?.classList.toggle('open'); }
+}
+
+// ═══════ SUPPLIER-WISE STOCK ═══════
+function buildSupplierStock() { renderSupplierStock(); }
+
+function renderSupplierStock() {
+  const srch = document.getElementById('sw-srch').value.toLowerCase();
+  const sort = document.getElementById('sw-sort').value;
+
+  const arts = getArtStats();
+  const bySupplier = {};
+  arts.forEach(a => {
+    const sup = a.supplier || 'Unknown';
+    if (!bySupplier[sup]) bySupplier[sup] = { supplier:sup, articles:[], totalStock:0, totalValue:0, totalPurchased:0, totalSold:0 };
+    bySupplier[sup].articles.push(a);
+    bySupplier[sup].totalStock += a.liveStock;
+    bySupplier[sup].totalValue += a.stockVal;
+    bySupplier[sup].totalPurchased += a.purchased;
+    bySupplier[sup].totalSold += a.netSold;
+  });
+
+  let groups = Object.values(bySupplier);
+  if (srch) groups = groups.filter(g => g.supplier.toLowerCase().includes(srch));
+  if (sort === 'stock') groups.sort((a,b)=>b.totalStock-a.totalStock);
+  else if (sort === 'value') groups.sort((a,b)=>b.totalValue-a.totalValue);
+  else if (sort === 'purchased') groups.sort((a,b)=>b.totalPurchased-a.totalPurchased);
+  else if (sort === 'name') groups.sort((a,b)=>a.supplier.localeCompare(b.supplier));
+
+  setMG('sw-m',[
+    {l:'Total suppliers',  v:groups.length},
+    {l:'Total stock',      v:groups.reduce((s,g)=>s+g.totalStock,0).toLocaleString()+' units'},
+    {l:'Unsold stock value',      v:'₹'+Math.round(groups.reduce((s,g)=>s+g.totalValue,0)).toLocaleString('en-IN'), s:'value of items NOT yet sold'},
+    {l:'Top supplier',     v:groups[0]?groups[0].supplier:'—', s:groups[0]?groups[0].totalStock+' units':''},
+  ]);
+
+  document.getElementById('sw-list').innerHTML = groups.map((g, idx) => `
+    <div class="group-card">
+      <div class="group-head" onclick="toggleGroup('sw-body-${idx}', this.querySelector('.chev'))">
+        <div>
+          <div class="group-title">${g.supplier}</div>
+          <div class="group-stats">
+            <span><span class="group-stat-val">${g.articles.length}</span> items</span>
+            <span><span class="group-stat-val">${g.totalStock.toLocaleString()}</span> in stock</span>
+            <span><span class="group-stat-val">${g.totalPurchased.toLocaleString()}</span> purchased</span>
+            <span><span class="group-stat-val">${g.totalSold.toLocaleString()}</span> sold</span>
+            <span>Unsold Value <span class="group-stat-val">₹${Math.round(g.totalValue).toLocaleString('en-IN')}</span></span>
+          </div>
+        </div>
+        <div class="chev">▶</div>
+      </div>
+      <div class="group-body" id="sw-body-${idx}">
+        <div class="tw"><table>
+          <thead><tr><th>Lot No.</th><th>Item</th><th>Brand</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Live Stock</th><th>Avg Cost</th><th>Unsold Value</th></tr></thead>
+          <tbody>${g.articles.sort((a,b)=>b.liveStock-a.liveStock).map(a=>`<tr>
+            <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
+            <td style="font-weight:600">${a.item||'—'}</td>
+            <td>${a.brand||'—'}</td>
+            <td>${a.size||'—'}</td>
+            <td>${a.purchased}</td>
+            <td>${a.netSold}</td>
+            <td style="font-weight:700;color:${a.liveStock===0?'var(--red-m)':a.liveStock<=5?'var(--amber-m)':'var(--green-m)'}">${a.liveStock}</td>
+            <td>₹${Math.round(a.avgCost)}</td>
+            <td style="font-weight:600">₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </div>
+    </div>
+  `).join('') || '<div class="empty">No supplier data yet — upload files</div>';
 }
 
 function buildFastMovers() {
-  const arts=getArtStats().sort((a,b)=>b.netSold-a.netSold);
-  const top=arts[0];
-  setMG('fm-m',[
-    {l:'Top lot no.',     v:top?top.lotNo||top.item:'—', s:top?top.item:''},
-    {l:'Super fast items',v:arts.filter(a=>a.netSold>10).length},
-    {l:'Total items sold',v:[...new Set(G.sale.map(r=>r.lotNo||r.item))].length},
-    {l:'Avg return rate', v:G.sale.reduce((s,r)=>s+r.qty,0)>0?Math.round(G.returns.reduce((s,r)=>s+r.qty,0)/G.sale.reduce((s,r)=>s+r.qty,0)*100)+'%':'0%'},
+  // Populate month filter
+  const months = {};
+  G.sale.forEach(r => {
+    if (!r.date) return;
+    const k = r.date.substring(0, 7); // YYYY-MM
+    if (!months[k]) {
+      const d = new Date(r.date + 'T00:00:00');
+      months[k] = d.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+    }
+  });
+  const sortedMonths = Object.entries(months).sort((a, b) => b[0].localeCompare(a[0]));
+  const monthEl = document.getElementById('fm-month');
+  if (monthEl) {
+    const cur = monthEl.value;
+    monthEl.innerHTML = '<option value="">All months</option>' + sortedMonths.map(([k, label]) => `<option value="${k}">${label}</option>`).join('');
+    monthEl.value = cur;
+  }
+
+  const arts = getArtStats().sort((a, b) => b.netSold - a.netSold);
+  const top = arts[0];
+  setMG('fm-m', [
+    { l: 'Top lot no.', v: top ? top.lotNo || top.item : '—', s: top ? top.item : '' },
+    { l: 'Super fast items', v: arts.filter(a => a.netSold > 10).length },
+    { l: 'Total items sold', v: [...new Set(G.sale.map(r => r.lotNo || r.item))].length },
+    { l: 'Avg return rate', v: G.sale.reduce((s, r) => s + r.qty, 0) > 0 ? Math.round(G.returns.reduce((s, r) => s + r.qty, 0) / G.sale.reduce((s, r) => s + r.qty, 0) * 100) + '%' : '0%' },
   ]);
-  mkBars('fm-bars',arts.slice(0,8).map(a=>({label:(a.lotNo||a.item||'').substring(0,20),qty:a.netSold})),'label','qty');
-  const cats={};
-  G.sale.forEach(r=>{const k=r.item||'Unknown';if(!cats[k])cats[k]={item:k,qty:0};cats[k].qty+=r.qty;});
-  G.returns.forEach(r=>{const k=r.item||'Unknown';if(cats[k])cats[k].qty-=r.qty;});
-  mkBars('cat-bars2',Object.values(cats).sort((a,b)=>b.qty-a.qty),'item','qty');
+  mkBars('fm-bars', arts.slice(0, 8).map(a => ({ label: (a.lotNo || a.item || '').substring(0, 20), qty: a.netSold })), 'label', 'qty');
+  const cats = {};
+  G.sale.forEach(r => { const k = r.item || 'Unknown'; if (!cats[k]) cats[k] = { item: k, qty: 0 }; cats[k].qty += r.qty; });
+  G.returns.forEach(r => { const k = r.item || 'Unknown'; if (cats[k]) cats[k].qty -= r.qty; });
+  mkBars('cat-bars2', Object.values(cats).sort((a, b) => b.qty - a.qty), 'item', 'qty');
   renderFM();
 }
 
 function renderFM() {
-  const arts=getArtStats().sort((a,b)=>b.netSold-a.netSold);
-  const catF=document.getElementById('fm-cat').value;
-  const brF=document.getElementById('fm-br').value;
-  const srch=document.getElementById('fm-srch').value.toLowerCase();
-  const f=arts.filter(a=>{
-    if(catF&&(a.item||'')!==catF) return false;
-    if(brF&&(a.brand||'')!==brF&&(a.supplier||'')!==brF) return false;
-    if(srch&&!(a.lotNo||'').toLowerCase().includes(srch)&&!(a.item||'').toLowerCase().includes(srch)&&!(a.brand||'').toLowerCase().includes(srch)) return false;
-    return a.netSold>0;
+  const monthF = document.getElementById('fm-month').value;
+  const catF = document.getElementById('fm-cat').value;
+  const brF = document.getElementById('fm-br').value;
+  const srch = document.getElementById('fm-srch').value.toLowerCase();
+
+  let arts;
+  if (monthF) {
+    // Build stats for selected month only
+    const m = {};
+    G.sale.forEach(r => {
+      if (!r.date || r.date.substring(0, 7) !== monthF) return;
+      const k = (r.lotNo || '') + '|' + (r.item || '') + '|' + (r.size || '');
+      if (!m[k]) m[k] = { lotNo: r.lotNo, item: r.item, brand: r.brand || '', size: r.size, grossSold: 0, returned: 0 };
+      m[k].grossSold += r.qty;
+      if (!m[k].brand && r.brand) m[k].brand = r.brand;
+    });
+    G.returns.forEach(r => {
+      if (!r.date || r.date.substring(0, 7) !== monthF) return;
+      const k = (r.lotNo || '') + '|' + (r.item || '') + '|' + (r.size || '');
+      if (m[k]) m[k].returned += r.qty;
+    });
+    // Add supplier info from purchase data
+    const supMap = {};
+    G.purchase.forEach(r => {
+      const k = (r.lotNo || '') + '|' + (r.item || '') + '|' + (r.size || '');
+      if (!supMap[k]) supMap[k] = r.supplier || r.brand || '';
+    });
+    arts = Object.values(m).map(a => {
+      a.netSold = Math.max(0, a.grossSold - a.returned);
+      const k = (a.lotNo || '') + '|' + (a.item || '') + '|' + (a.size || '');
+      if (!a.brand && supMap[k]) a.brand = supMap[k];
+      a.saleDates = [];
+      return a;
+    }).sort((a, b) => b.netSold - a.netSold);
+  } else {
+    arts = getArtStats().sort((a, b) => b.netSold - a.netSold);
+  }
+
+  const f = arts.filter(a => {
+    if (catF && (a.item || '') !== catF) return false;
+    if (brF && (a.brand || a.supplier || '') !== brF) return false;
+    if (srch && !(a.lotNo || '').toLowerCase().includes(srch) && !(a.item || '').toLowerCase().includes(srch)) return false;
+    return a.netSold > 0;
   });
-  document.getElementById('fm-body').innerHTML=f.slice(0,100).map((a,i)=>`<tr>
-    <td><div class="rk ${i<3?'r'+(i+1):'rn'}">${i+1}</div></td>
-    <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
-    <td style="font-weight:600">${a.item||'—'}</td>
-    <td>${a.brand||a.supplier||'—'}</td>
-    <td>${''}</td>
-    <td>${a.size||'—'}</td>
+
+  const totalNetSold = f.reduce((s, a) => s + a.netSold, 0);
+
+  document.getElementById('fm-body').innerHTML = f.slice(0, 200).map((a, i) => `<tr>
+    <td><div class="rk ${i < 3 ? 'r' + (i + 1) : 'rn'}">${i + 1}</div></td>
+    <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo || '—'}</td>
+    <td style="font-weight:600">${a.item || '—'}</td>
+    <td>${a.brand || a.supplier || '—'}</td>
+    <td>${a.size || '—'}</td>
     <td>${a.grossSold}</td>
-    <td style="${a.returned>0?'color:var(--purple-m);font-weight:600':''}">${a.returned}</td>
+    <td style="${a.returned > 0 ? 'color:var(--purple-m);font-weight:600' : ''}">${a.returned}</td>
     <td style="font-weight:700">${a.netSold}</td>
-    <td>${avgDayTag(a)}</td>
-  </tr>`).join('')||noData(10);
+    <td>${monthF ? '' : avgDayTag(a)}</td>
+  </tr>`).join('') || noData(9);
+
+  const countEl = document.getElementById('fm-count');
+  if (countEl) {
+    const monthLabel = monthF ? document.getElementById('fm-month').selectedOptions[0].text : 'All time';
+    countEl.innerHTML = `${monthLabel} · ${f.length} items · ${totalNetSold.toLocaleString()} net units sold`;
+  }
 }
 
 function buildBrands() {
@@ -946,28 +1199,45 @@ function buildBrands() {
   const top=brs[0];
   const highRet=[...brs].sort((a,b)=>b.retRate-a.retRate)[0];
   setMG('br-m',[
-    {l:'Total brands',       v:[...new Set(G.sale.map(r=>r.brand).filter(Boolean))].length},
+    {l:'Total brands',       v:brs.length},
     {l:'Top brand',          v:top?top.brand:'—', s:top?top.netSold+' net units':''},
     {l:'Highest return rate',v:highRet?highRet.brand:'—', s:highRet?highRet.retRate+'%':'', c:'dn'},
     {l:'Total net sold',     v:brs.reduce((s,b)=>s+b.netSold,0)},
   ]);
   mkBars('br-bars',brs.slice(0,8),'brand','netSold');
+
+  // Populate filters
+  const brandNames = brs.map(b=>b.brand).sort();
+  const supNames = [...new Set(brs.map(b=>b.supplier).filter(Boolean))].sort();
+  const setO=(id,vals,label)=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option>${v}</option>`).join('');el.value=cur;};
+  setO('br-brand',brandNames,'All brands');
+  setO('br-sup',supNames,'All suppliers');
+
   renderBr();
 }
 
 function renderBr() {
   const brs=getBrandStats();
-  const catF=document.getElementById('br-cat').value;
-  const f=brs.filter(b=>!catF||b.category===catF);
-  document.getElementById('br-body').innerHTML=f.slice(0,100).map((b,i)=>`<tr>
+  const brandF=document.getElementById('br-brand').value;
+  const supF=document.getElementById('br-sup').value;
+  const srch=document.getElementById('br-srch').value.toLowerCase();
+  const f=brs.filter(b=>{
+    if(brandF&&b.brand!==brandF) return false;
+    if(supF&&b.supplier!==supF) return false;
+    if(srch&&!b.brand.toLowerCase().includes(srch)&&!(b.supplier||'').toLowerCase().includes(srch)) return false;
+    return true;
+  });
+  document.getElementById('br-body').innerHTML=f.slice(0,200).map((b,i)=>`<tr>
     <td><div class="rk ${i<3?'r'+(i+1):'rn'}">${i+1}</div></td>
     <td style="font-weight:600">${b.brand}</td>
-    <td>${b.category}</td>
+    <td>${b.supplier||'—'}</td>
+    <td>${b.purchased}</td>
     <td>${b.grossSold}</td>
     <td style="${b.returned>0?'color:var(--purple-m);font-weight:600':''}">${b.returned}</td>
     <td style="font-weight:700">${b.netSold}</td>
+    <td style="font-weight:700;color:${b.liveStock===0?'var(--red-m)':b.liveStock<=10?'var(--amber-m)':'var(--green-m)'}">${b.liveStock}</td>
     <td><span class="tag ${b.retRate>15?'tr':b.retRate>5?'ta':'tg'}">${b.retRate}%</span></td>
-  </tr>`).join('')||noData(7);
+  </tr>`).join('')||noData(9);
 }
 
 function buildReturns() {
@@ -975,17 +1245,17 @@ function buildReturns() {
   const grossSold=G.sale.reduce((s,r)=>s+r.qty,0);
   const retRate=grossSold>0?Math.round(total/grossSold*100):0;
   setMG('ret-m',[
-    {l:'Total units returned', v:total},
-    {l:'Return rate',          v:retRate+'%', s:retRate>10?'High — review quality':'Normal', c:retRate>10?'dn':'up'},
-    {l:'Brands with returns',  v:[...new Set(G.returns.map(r=>r.brand).filter(Boolean))].length},
-    {l:'Restocked in stock',   v:total, s:'added back automatically', c:'pu'},
+    {l:'Total returned', v:total},
+    {l:'Return rate',    v:retRate+'%', s:retRate>10?'High — check quality':'Normal', c:retRate>10?'dn':'up'},
+    {l:'Brands with returns', v:[...new Set(G.returns.map(r=>r.brand).filter(Boolean))].length},
+    {l:'Restocked',      v:total, s:'added back automatically', c:'pu'},
   ]);
   const alerts=[];
-  if(retRate>15) alerts.push(`Overall return rate ${retRate}% is very high — check product quality`);
+  if(retRate>15) alerts.push(`Overall return rate ${retRate}% is very high`);
   document.getElementById('ret-alerts').innerHTML=alerts.map(a=>`<div class="alert-r">⚠️ ${a}</div>`).join('');
 
   if(!G.returns.length){
-    ['ret-br-bars','ret-item-bars'].forEach(id=>document.getElementById(id).innerHTML='<div class="empty">No returns in uploaded data</div>');
+    ['ret-br-bars','ret-item-bars'].forEach(id=>document.getElementById(id).innerHTML='<div class="empty">No returns</div>');
     document.getElementById('ret-body').innerHTML=noData(8);
     return;
   }
@@ -1006,17 +1276,20 @@ function buildReturns() {
 }
 
 function buildDead() {
+  const deadDays = parseInt(document.getElementById('ds-days').value) || 90;
   const arts=getArtStats();
-  const dead=arts.filter(a=>a.daysSince>=90&&a.liveStock>0).sort((a,b)=>b.daysSince-a.daysSince);
+  const dead=arts.filter(a=>a.daysSince>=deadDays&&a.liveStock>0).sort((a,b)=>b.daysSince-a.daysSince);
   const dv=dead.reduce((s,a)=>s+a.stockVal,0);
+  const neverSold=dead.filter(a=>a.daysSince>=9999).length;
   setMG('ds-m',[
-    {l:'Dead stock items',  v:dead.length, c:'dn'},
-    {l:'Capital blocked',   v:'₹'+Math.round(dv).toLocaleString('en-IN'), c:'dn'},
-    {l:'Oldest unsold',     v:dead[0]?dead[0].daysSince+'d':'—', s:dead[0]?dead[0].lotNo||dead[0].item:''},
-    {l:'180+ day critical', v:dead.filter(a=>a.daysSince>=180).length, c:'dn'},
+    {l:'Dead items',       v:dead.length, c:'dn'},
+    {l:'Capital blocked',  v:'₹'+Math.round(dv).toLocaleString('en-IN'), c:'dn'},
+    {l:'Never sold items', v:neverSold, s:'purchased but 0 sales', c:'dn'},
+    {l:'Total dead units', v:dead.reduce((s,a)=>s+a.liveStock,0).toLocaleString(), c:'dn'},
   ]);
   const al=[];
-  if(dead.filter(a=>a.daysSince>=180).length) al.push(dead.filter(a=>a.daysSince>=180).length+' articles beyond 180 days — immediate clearance recommended');
+  if(neverSold) al.push(neverSold+' items purchased but NEVER sold — consider returning to supplier');
+  if(dead.length>100) al.push(dead.length+' items not sold in '+deadDays+'+ days — clearance recommended');
   document.getElementById('ds-alerts').innerHTML=al.map(a=>`<div class="alert-r">⚠️ ${a}</div>`).join('');
 
   const supM={},itemM={};
@@ -1024,18 +1297,52 @@ function buildDead() {
   mkBars('ds-sup-bars',Object.entries(supM).sort((a,b)=>b[1]-a[1]).map(([s,n])=>({s,n})),'s','n',['#d85a30']);
   mkBars('ds-item-bars',Object.entries(itemM).sort((a,b)=>b[1]-a[1]).map(([item,n])=>({item,n})),'item','n',['#e89008']);
 
-  document.getElementById('ds-body').innerHTML=dead.slice(0,100).map(a=>`<tr>
+  // Populate dead stock filters
+  const dsSups=[...new Set(dead.map(a=>a.supplier||a.brand||'Unknown'))].sort();
+  const dsBrands=[...new Set(dead.map(a=>a.brand||'Unknown'))].sort();
+  const setOpts2=(id,vals,label)=>{const el=document.getElementById(id);if(!el)return;el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option>${v}</option>`).join('');};
+  setOpts2('ds-sup',dsSups,'All suppliers');
+  setOpts2('ds-brand',dsBrands,'All brands');
+
+  renderDead();
+}
+
+function renderDead() {
+  const deadDays = parseInt(document.getElementById('ds-days').value) || 90;
+  const arts=getArtStats();
+  const dead=arts.filter(a=>a.daysSince>=deadDays&&a.liveStock>0).sort((a,b)=>b.daysSince-a.daysSince);
+
+  const supF=document.getElementById('ds-sup').value;
+  const brF=document.getElementById('ds-brand').value;
+  const ageF=document.getElementById('ds-age').value;
+  const srch=document.getElementById('ds-srch').value.toLowerCase();
+
+  const filtered=dead.filter(a=>{
+    if(supF&&(a.supplier||a.brand||'Unknown')!==supF) return false;
+    if(brF&&(a.brand||'Unknown')!==brF) return false;
+    if(ageF==='never'&&a.daysSince<9999) return false;
+    if(srch&&!(a.supplier||'').toLowerCase().includes(srch)&&!(a.item||'').toLowerCase().includes(srch)&&!(a.lotNo||'').toLowerCase().includes(srch)&&!(a.brand||'').toLowerCase().includes(srch)) return false;
+    return true;
+  });
+
+  const filteredVal=filtered.reduce((s,a)=>s+a.stockVal,0);
+  const filteredQty=filtered.reduce((s,a)=>s+a.liveStock,0);
+
+  document.getElementById('ds-body').innerHTML=filtered.slice(0,500).map(a=>`<tr>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
     <td style="font-weight:600">${a.item||'—'}</td>
-    <td>${a.supplier||a.brand||'—'}</td>
+    <td>${a.supplier||'—'}</td>
+    <td>${a.brand||'—'}</td>
     <td>${a.size||'—'}</td>
     <td style="font-weight:700">${a.liveStock}</td>
     <td>₹${Math.round(a.avgCost)}</td>
     <td style="font-weight:700;color:var(--red-m)">₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td>
-    <td>${a.lastSale?a.lastSale.toLocaleDateString('en-IN'):'Never'}</td>
-    <td style="color:var(--red-m);font-weight:700">${a.daysSince>=9999?'Never sold':a.daysSince+' days'}</td>
-    <td><span class="tag ${a.daysSince>=180?'tr':a.daysSince>=120?'ta':'tgr'}">${a.daysSince>=180?'Clearance Now':a.daysSince>=120?'Discount 30%':'Discount 20%'}</span></td>
-  </tr>`).join('')||noData(10);
+    <td>${a.lastSale?a.lastSale.toLocaleDateString('en-IN'):'<span style="color:var(--red-m)">Never Sold</span>'}</td>
+    <td style="color:var(--red-m);font-weight:700">${a.daysSince>=9999?'Never Sold':a.daysSince+' days'}</td>
+    <td><span class="tag ${a.daysSince>=9999?'tr':a.daysSince>=180?'tr':a.daysSince>=90?'ta':'tgr'}">${a.daysSince>=9999?'Never Sold':a.daysSince>=180?'Clearance':a.daysSince>=90?'Slow':'Watch'}</span></td>
+  </tr>`).join('')||noData(11);
+
+  document.getElementById('ds-count').innerHTML=`Showing ${Math.min(filtered.length,500)} of ${filtered.length} dead items · ${filteredQty.toLocaleString()} units · ₹${Math.round(filteredVal).toLocaleString('en-IN')} blocked`;
 }
 
 function buildPurReg() { renderPur(); }
@@ -1046,19 +1353,15 @@ function renderPur() {
   const itemF=document.getElementById('pur-item').value;
   const srch=document.getElementById('pur-srch').value.toLowerCase();
   const f=G.purchase.filter(r=>{
-    if(supF&&(r.supplier||'')!==supF&&(r.brand||'')!==supF) return false;
+    if(supF&&r.supplier!==supF) return false;
     if(itemF&&r.item!==itemF) return false;
-    if(srch&&!(r.lotNo||'').toLowerCase().includes(srch)&&!(r.item||'').toLowerCase().includes(srch)&&!(r.supplier||'').toLowerCase().includes(srch)) return false;
+    if(srch&&!(r.lotNo||'').toLowerCase().includes(srch)&&!(r.item||'').toLowerCase().includes(srch)) return false;
     return true;
   });
   document.getElementById('pur-body').innerHTML=f.slice(0,500).map(r=>`<tr>
-    <td>${r.date||'—'}</td>
-    <td>${r.supplier||'—'}</td>
-    <td style="font-weight:600">${r.item||'—'}</td>
-    <td>${r.size||'—'}</td>
-    <td style="font-family:'DM Mono',monospace;font-size:10px">${r.lotNo||'—'}</td>
-    <td style="font-weight:600">${r.qty}</td>
-    <td>₹${Math.round(r.rate||0)}</td>
+    <td>${r.date||'—'}</td><td>${r.supplier||'—'}</td><td style="font-weight:600">${r.item||'—'}</td>
+    <td>${r.size||'—'}</td><td style="font-family:'DM Mono',monospace;font-size:10px">${r.lotNo||'—'}</td>
+    <td style="font-weight:600">${r.qty}</td><td>₹${Math.round(r.rate||0)}</td>
     <td style="font-weight:600">₹${Math.round((r.qty*(r.rate||0))).toLocaleString('en-IN')}</td>
   </tr>`).join('')||noData(8);
 }
@@ -1075,11 +1378,8 @@ function renderSal() {
     return true;
   });
   document.getElementById('sal-body').innerHTML=f.slice(0,500).map(r=>`<tr>
-    <td>${r.date||'—'}</td>
-    <td>${r.brand||'—'}</td>
-    <td>${r.category||'—'}</td>
-    <td style="font-weight:600">${r.item||'—'}</td>
-    <td>${r.size||'—'}</td>
+    <td>${r.date||'—'}</td><td>${r.brand||'—'}</td><td>${r.category||'—'}</td>
+    <td style="font-weight:600">${r.item||'—'}</td><td>${r.size||'—'}</td>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${r.lotNo||'—'}</td>
     <td style="font-weight:700;color:${r.isReturn?'var(--purple-m)':'var(--text)'}">${r.isReturn?'-':'+'}${r.qty}</td>
     <td>${r.isReturn?'<span class="tag tp">Return</span>':'<span class="tag tg">Sale</span>'}</td>
@@ -1087,26 +1387,19 @@ function renderSal() {
 }
 
 function populateFilters() {
-  const arts = getArtStats();
   const cats=[...new Set(G.sale.map(r=>r.item).filter(Boolean))].sort();
   const brs=[...new Set(G.sale.map(r=>r.brand).filter(Boolean))].sort();
-  // Combine suppliers from both purchase records and computed article stats
-  const supSet = new Set();
-  G.purchase.forEach(r=>{ if(r.supplier) supSet.add(r.supplier); });
-  arts.forEach(a=>{ if(a.supplier) supSet.add(a.supplier); });
-  const sups=[...supSet].sort();
+  const sups=[...new Set(G.purchase.map(r=>r.supplier).filter(Boolean))].sort();
   const items=[...new Set(G.purchase.map(r=>r.item).filter(Boolean))].sort();
+  const allBrands = [...new Set([...brs, ...G.purchase.map(r=>r.brand).filter(Boolean)])].sort();
   const setOpts=(id,vals,label)=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option>${v}</option>`).join('');el.value=cur;};
-  setOpts('inv-cat',cats,'All items');setOpts('inv-sup',sups,'All suppliers');
+  setOpts('inv-cat',cats,'All items');setOpts('inv-sup',sups,'All suppliers');setOpts('inv-brand',allBrands,'All brands');
   setOpts('fm-cat',cats,'All items');setOpts('fm-br',brs,'All brands');
-  setOpts('br-cat',[...new Set(G.sale.map(r=>r.category).filter(Boolean))].sort(),'All categories');
   setOpts('pur-sup',sups,'All suppliers');setOpts('pur-item',items,'All items');
   setOpts('sal-br',brs,'All brands');setOpts('sal-cat',[...new Set(G.sale.map(r=>r.category).filter(Boolean))].sort(),'All categories');
+  setOpts('ro-brand',allBrands,'All brands');setOpts('ro-sup',sups,'All suppliers');
 }
 
-// ═══════════════════════════════════════════════════════
-// WEEKLY REPORT
-// ═══════════════════════════════════════════════════════
 function setThisWeek() {
   const today = new Date();
   const day = today.getDay();
@@ -1120,209 +1413,87 @@ function setThisWeek() {
 function buildWeekly() {
   const dateEl = document.getElementById('wk-date');
   if (!dateEl.value) { setThisWeek(); return; }
-
   const weekEnd   = new Date(dateEl.value + 'T23:59:59');
   const weekStart = new Date(weekEnd); weekStart.setDate(weekEnd.getDate() - 6);
   const lastStart = new Date(weekStart); lastStart.setDate(weekStart.getDate() - 7);
   const lastEnd   = new Date(weekStart); lastEnd.setDate(weekStart.getDate() - 1);
-
   const fmt = d => d.toLocaleDateString('en-IN', {day:'numeric',month:'short'});
-  document.getElementById('wk-sub').textContent =
-    `Week: ${fmt(weekStart)} – ${fmt(weekEnd)}  |  Compared with previous week: ${fmt(lastStart)} – ${fmt(lastEnd)}`;
+  document.getElementById('wk-sub').textContent = `Week: ${fmt(weekStart)} – ${fmt(weekEnd)}  |  vs: ${fmt(lastStart)} – ${fmt(lastEnd)}`;
 
   const thisWeek = {}, lastWeek = {};
   G.sale.forEach(r => {
     if (!r.date) return;
     const d = new Date(r.date + 'T00:00:00');
     const k = (r.lotNo||'')+'|'+(r.item||'')+'|'+(r.size||'');
-    if (d >= weekStart && d <= weekEnd) {
-      if (!thisWeek[k]) thisWeek[k] = { lotNo:r.lotNo, item:r.item, brand:r.brand, category:r.category, size:r.size, qty:0 };
-      thisWeek[k].qty += r.qty;
-    }
-    if (d >= lastStart && d <= lastEnd) {
-      if (!lastWeek[k]) lastWeek[k] = { qty:0 };
-      lastWeek[k].qty += r.qty;
-    }
-  });
-  G.returns.forEach(r => {
-    if (!r.date) return;
-    const d = new Date(r.date + 'T00:00:00');
-    const k = (r.lotNo||'')+'|'+(r.item||'')+'|'+(r.size||'');
-    if (d >= weekStart && d <= weekEnd && thisWeek[k]) thisWeek[k].qty = Math.max(0, thisWeek[k].qty - r.qty);
+    if (d >= weekStart && d <= weekEnd) { if (!thisWeek[k]) thisWeek[k] = { lotNo:r.lotNo, item:r.item, brand:r.brand, size:r.size, qty:0 }; thisWeek[k].qty += r.qty; }
+    if (d >= lastStart && d <= lastEnd) { if (!lastWeek[k]) lastWeek[k] = { qty:0 }; lastWeek[k].qty += r.qty; }
   });
 
   const arts = getArtStats();
   const artByKey = {};
-  arts.forEach(a => {
-    const k = (a.lotNo||'')+'|'+(a.item||'')+'|'+(a.size||'');
-    artByKey[k] = a;
-  });
-
+  arts.forEach(a => { artByKey[(a.lotNo||'')+'|'+(a.item||'')+'|'+(a.size||'')] = a; });
   const enriched = Object.entries(thisWeek).map(([k, tw]) => {
     const lw = lastWeek[k] || { qty:0 };
-    const art = artByKey[k] || { liveStock:0, avgCost:0, daysSince:0, purchased:0, netSold:0, supplier:tw.brand||'' };
+    const art = artByKey[k] || { liveStock:0, avgCost:0, supplier:tw.brand||'' };
     const velocity = tw.qty / 7;
     const daysCover = velocity > 0 ? Math.floor(art.liveStock / velocity) : 999;
-    return { ...tw, lw: lw.qty, art, velocity, daysCover };
+    return { ...tw, lw: lw.qty, art, daysCover };
   }).sort((a,b) => b.qty - a.qty);
 
   const totalSoldWk = enriched.reduce((s,r)=>s+r.qty,0);
   const totalSoldLw = enriched.reduce((s,r)=>s+r.lw,0);
   const urgentCount = enriched.filter(r=>r.daysCover<7&&r.art.liveStock<=5).length;
-  const deadArts    = arts.filter(a=>a.daysSince>=90&&a.liveStock>0);
-  const deadVal     = deadArts.reduce((s,a)=>s+a.stockVal,0);
+  const deadArts = arts.filter(a=>a.daysSince>=90&&a.liveStock>0);
+  const deadVal = deadArts.reduce((s,a)=>s+a.stockVal,0);
 
   const urgent = enriched.filter(r => r.art.liveStock <= 5 && r.qty >= 3);
   document.getElementById('wk-urgent').innerHTML = urgent.length === 0
-    ? '<div style="font-size:12px;color:var(--green-m);font-weight:600;margin-bottom:8px">✓ No urgent restocks needed this week</div>'
-    : `<div style="font-size:12px;color:var(--red-m);font-weight:600;margin-bottom:8px">⚠️ ${urgent.length} items need urgent restock before stock runs out</div>`;
+    ? '<div style="font-size:12px;color:var(--green-m);font-weight:600;margin-bottom:8px">✓ No urgent restocks needed</div>'
+    : `<div style="font-size:12px;color:var(--red-m);font-weight:600;margin-bottom:8px">⚠️ ${urgent.length} items need urgent restock</div>`;
   document.getElementById('wk-urgent-tbl').innerHTML = urgent.slice(0,20).map(r=>`<tr>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${r.lotNo||'—'}</td>
-    <td style="font-weight:700">${r.item||'—'}</td>
-    <td>${r.brand||r.art.supplier||'—'}</td>
-    <td>${r.size||'—'}</td>
+    <td style="font-weight:700">${r.item||'—'}</td><td>${r.brand||r.art.supplier||'—'}</td><td>${r.size||'—'}</td>
     <td style="font-weight:700;color:var(--green-m)">${r.qty}</td>
     <td style="font-weight:700;color:${r.art.liveStock===0?'var(--red-m)':'var(--amber-m)'}">${r.art.liveStock}</td>
     <td style="color:var(--red-m);font-weight:700">${r.daysCover>=999?'—':r.daysCover+' days'}</td>
     <td><span class="tag tr">Order Now</span></td>
   </tr>`).join('')||'<tr><td colspan="8" class="empty">None</td></tr>';
 
-  const soon = enriched.filter(r => r.art.liveStock > 5 && r.art.liveStock <= 15 && r.qty >= 2);
-  document.getElementById('wk-soon-tbl').innerHTML = soon.slice(0,20).map(r=>{
-    const trend = r.qty > r.lw ? `<span class="trend-up">▲ +${r.qty-r.lw}</span>` : r.qty < r.lw ? `<span class="trend-dn">▼ ${r.qty-r.lw}</span>` : '<span class="trend-eq">= same</span>';
-    return `<tr>
-      <td style="font-family:'DM Mono',monospace;font-size:10px">${r.lotNo||'—'}</td>
-      <td style="font-weight:700">${r.item||'—'}</td>
-      <td>${r.brand||r.art.supplier||'—'}</td>
-      <td>${r.size||'—'}</td>
-      <td style="font-weight:700;color:var(--green-m)">${r.qty}</td>
-      <td>${r.lw}</td>
-      <td style="font-weight:700;color:var(--amber-m)">${r.art.liveStock}</td>
-      <td>${r.daysCover>=999?'—':r.daysCover+' days'}</td>
-      <td>${trend}</td>
-    </tr>`;
-  }).join('')||'<tr><td colspan="9" class="empty">No items need restocking soon</td></tr>';
-
   document.getElementById('wk-fast-tbl').innerHTML = enriched.slice(0,15).map((r,i)=>{
     const change = r.qty - r.lw;
     const trend = change > 0 ? `<span class="trend-up">▲ +${change}</span>` : change < 0 ? `<span class="trend-dn">▼ ${change}</span>` : '<span class="trend-eq">—</span>';
-    return `<tr>
-      <td><div class="rk ${i<3?'r'+(i+1):'rn'}">${i+1}</div></td>
+    return `<tr><td><div class="rk ${i<3?'r'+(i+1):'rn'}">${i+1}</div></td>
       <td style="font-family:'DM Mono',monospace;font-size:10px">${r.lotNo||'—'}</td>
-      <td style="font-weight:700">${r.item||'—'}</td>
-      <td>${r.brand||'—'}</td>
-      <td>${r.category||'—'}</td>
-      <td>${r.size||'—'}</td>
-      <td style="font-weight:700;color:var(--green-m)">${r.qty}</td>
-      <td>${r.lw}</td>
-      <td>${trend}</td>
-    </tr>`;
-  }).join('')||'<tr><td colspan="9" class="empty">No sales this week — upload this week\'s sale file</td></tr>';
-
-  const slow = arts.filter(a => {
-    const k = (a.lotNo||'')+'|'+(a.item||'')+'|'+(a.size||'');
-    const soldThisWk = thisWeek[k] ? thisWeek[k].qty : 0;
-    return a.liveStock > 0 && soldThisWk <= 1 && a.netSold <= 2 && a.daysSince > 14 && a.daysSince < 90;
-  }).sort((a,b) => b.daysSince - a.daysSince);
-
-  document.getElementById('wk-slow-tbl').innerHTML = slow.slice(0,20).map(a=>`<tr>
-    <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
-    <td style="font-weight:700">${a.item||'—'}</td>
-    <td>${a.supplier||a.brand||'—'}</td>
-    <td>${a.size||'—'}</td>
-    <td>${a.purchased}</td>
-    <td>${a.netSold}</td>
-    <td style="font-weight:700;color:var(--amber-m)">${a.liveStock}</td>
-    <td style="color:var(--amber-m);font-weight:600">${a.daysSince>=9999?'Never sold':a.daysSince+' days'}</td>
-    <td><span class="tag ta">Moving Slow</span></td>
-  </tr>`).join('')||'<tr><td colspan="9" class="empty">No slow movers — great!</td></tr>';
+      <td style="font-weight:700">${r.item||'—'}</td><td>${r.brand||'—'}</td><td>${r.size||'—'}</td>
+      <td style="font-weight:700;color:var(--green-m)">${r.qty}</td><td>${r.lw}</td><td>${trend}</td></tr>`;
+  }).join('')||'<tr><td colspan="8" class="empty">No sales this week</td></tr>';
 
   document.getElementById('wk-dead-summary').innerHTML = deadArts.length > 0
-    ? `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">
-        <div style="padding:8px 14px;background:var(--red-l);border-radius:var(--r);font-size:12px;color:var(--red-m);font-weight:700">${deadArts.length} items unsold 90+ days</div>
-        <div style="padding:8px 14px;background:var(--red-l);border-radius:var(--r);font-size:12px;color:var(--red-m);font-weight:700">₹${Math.round(deadVal).toLocaleString('en-IN')} capital blocked</div>
-        ${deadArts.filter(a=>a.daysSince>=180).length>0?`<div style="padding:8px 14px;background:#ff000015;border-radius:var(--r);font-size:12px;color:var(--red-m);font-weight:700">⚠️ ${deadArts.filter(a=>a.daysSince>=180).length} items beyond 180 days — sell at discount immediately</div>`:''}
-      </div>`
-    : '<div style="font-size:12px;color:var(--green-m);font-weight:600">✓ No dead stock — all items moving!</div>';
-
+    ? `<div style="padding:8px 14px;background:var(--red-l);border-radius:var(--r);font-size:12px;color:var(--red-m);font-weight:700;display:inline-block">${deadArts.length} items unsold 90+ days · ₹${Math.round(deadVal).toLocaleString('en-IN')} blocked</div>`
+    : '<div style="font-size:12px;color:var(--green-m);font-weight:600">✓ No dead stock</div>';
   document.getElementById('wk-dead-tbl').innerHTML = deadArts.slice(0,30).map(a=>`<tr>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
-    <td style="font-weight:700">${a.item||'—'}</td>
-    <td>${a.supplier||a.brand||'—'}</td>
-    <td>${a.size||'—'}</td>
+    <td style="font-weight:700">${a.item||'—'}</td><td>${a.supplier||a.brand||'—'}</td><td>${a.size||'—'}</td>
     <td style="font-weight:700">${a.liveStock}</td>
-    <td>₹${Math.round(a.avgCost)}</td>
     <td style="font-weight:700;color:var(--red-m)">₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td>
-    <td style="color:var(--red-m);font-weight:700">${a.daysSince>=9999?'Never sold':a.daysSince+' days'}</td>
-    <td><span class="tag ${a.daysSince>=180?'tr':a.daysSince>=120?'ta':'tgr'}">${a.daysSince>=180?'Clear Stock Now':a.daysSince>=120?'Discount 30%':'Discount 20%'}</span></td>
-  </tr>`).join('')||'<tr><td colspan="9" class="empty">No dead stock</td></tr>';
-
-  const topItem = enriched[0];
-  const topBrand = (() => {
-    const bm = {}; enriched.forEach(r=>{bm[r.brand||'?']=(bm[r.brand||'?']||0)+r.qty;}); return Object.entries(bm).sort((a,b)=>b[1]-a[1])[0];
-  })();
-
-  const overstock = arts.filter(a => {
-    if (a.purchased < 5) return false;
-    if (a.liveStock < 3) return false;
-    const sellPct = a.purchased > 0 ? (a.netSold / a.purchased) * 100 : 0;
-    return sellPct < 40 && a.daysSince > 14;
-  }).map(a => {
-    const sellPct = a.purchased > 0 ? Math.round(a.netSold / a.purchased * 100) : 0;
-    const weeksSold = a.netSold > 0 ? a.purchased / (a.netSold / Math.max(a.daysSince, 7) * 7) : 999;
-    return { ...a, sellPct, weeksCover: Math.round(weeksSold) };
-  }).sort((a, b) => a.sellPct - b.sellPct);
-
-  const overstockVal = overstock.reduce((s, a) => s + a.stockVal, 0);
-
-  document.getElementById('wk-over-summary').innerHTML = overstock.length > 0
-    ? `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">
-        <div style="padding:8px 14px;background:var(--purple-l);border-radius:var(--r);font-size:12px;color:var(--purple-m);font-weight:700">${overstock.length} overstock items found</div>
-        <div style="padding:8px 14px;background:var(--purple-l);border-radius:var(--r);font-size:12px;color:var(--purple-m);font-weight:700">₹${Math.round(overstockVal).toLocaleString('en-IN')} money stuck in overstock</div>
-        <div style="padding:8px 14px;background:var(--purple-l);border-radius:var(--r);font-size:12px;color:var(--purple-m);font-weight:700">Stop buying more of these items</div>
-      </div>`
-    : '<div style="font-size:12px;color:var(--green-m);font-weight:600">✓ No overstock — your buying is well balanced!</div>';
-
-  document.getElementById('wk-over-tbl').innerHTML = overstock.slice(0, 30).map(a => {
-    const suggestion = a.sellPct < 10
-      ? '<span class="tag tr">Stop Buying</span>'
-      : a.sellPct < 25
-      ? '<span class="tag ta">Reduce Orders</span>'
-      : '<span class="tag tp">Monitor</span>';
-    const wkCover = a.weeksCover >= 999 ? 'Never selling' : a.weeksCover + ' weeks';
-    return `<tr>
-      <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo || '—'}</td>
-      <td style="font-weight:700">${a.item || '—'}</td>
-      <td>${a.supplier || a.brand || '—'}</td>
-      <td>${a.size || '—'}</td>
-      <td>${a.purchased}</td>
-      <td>${a.netSold}</td>
-      <td style="font-weight:700;color:var(--purple-m)">${a.liveStock}</td>
-      <td><span class="tag ${a.sellPct < 10 ? 'tr' : a.sellPct < 25 ? 'ta' : 'tp'}">${a.sellPct}%</span></td>
-      <td style="font-weight:700;color:var(--purple-m)">₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td>
-      <td style="color:var(--amber-m);font-weight:600">${wkCover}</td>
-      <td>${suggestion}</td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="11" class="empty">No overstock — great buying decisions!</td></tr>';
+    <td style="color:var(--red-m);font-weight:700">${a.daysSince>=9999?'Never Sold':a.daysSince+' days'}</td>
+    <td><span class="tag ${a.daysSince>=9999?'tr':a.daysSince>=180?'tr':'ta'}">${a.daysSince>=9999?'Never Sold':a.daysSince>=180?'Clearance':'Discount'}</span></td>
+  </tr>`).join('')||'<tr><td colspan="8" class="empty">No dead stock</td></tr>';
 
   setMG('wk-m',[
-    {l:'Total sold this week', v:totalSoldWk, s:totalSoldWk>totalSoldLw?'▲ up from last week':'▼ down from last week', c:totalSoldWk>=totalSoldLw?'up':'dn'},
+    {l:'Total sold this week', v:totalSoldWk, s:totalSoldWk>totalSoldLw?'▲ up':'▼ down', c:totalSoldWk>=totalSoldLw?'up':'dn'},
     {l:'Last week sales',      v:totalSoldLw},
-    {l:'Restock urgently',     v:urgentCount, s:'items critically low', c:urgentCount>0?'dn':'up'},
-    {l:'Overstock items',      v:overstock.length, s:'₹'+Math.round(overstockVal).toLocaleString('en-IN')+' stuck', c:overstock.length>0?'dn':'up'},
-    {l:'Dead stock items',     v:deadArts.length, s:'90+ days unsold', c:deadArts.length>0?'dn':'up'},
+    {l:'Restock urgently',     v:urgentCount, c:urgentCount>0?'dn':'up'},
+    {l:'Dead stock items',     v:deadArts.length, c:'dn'},
     {l:'Dead stock value',     v:'₹'+Math.round(deadVal).toLocaleString('en-IN'), c:'dn'},
+    {l:'Items sold',           v:enriched.length},
   ]);
 
-  document.getElementById('wk-summary').innerHTML = `
-    <div class="sum-grid">
-      <div class="sum-box"><div class="sum-label">Top item this week</div><div class="sum-val" style="font-size:14px">${topItem?topItem.item||topItem.lotNo:'—'}</div><div class="sum-sub">${topItem?topItem.qty+' units sold':''}</div></div>
-      <div class="sum-box"><div class="sum-label">Top brand this week</div><div class="sum-val" style="font-size:14px">${topBrand?topBrand[0]:'—'}</div><div class="sum-sub">${topBrand?topBrand[1]+' units sold':''}</div></div>
-      <div class="sum-box"><div class="sum-label">Items to restock</div><div class="sum-val" style="color:var(--red-m)">${urgent.length+soon.length}</div><div class="sum-sub">${urgent.length} urgent, ${soon.length} soon</div></div>
-      <div class="sum-box"><div class="sum-label">Overstock items</div><div class="sum-val" style="color:var(--purple-m)">${overstock.length}</div><div class="sum-sub">₹${Math.round(overstockVal).toLocaleString('en-IN')} money stuck</div></div>
-      <div class="sum-box"><div class="sum-label">Dead stock value</div><div class="sum-val" style="color:var(--red-m)">₹${Math.round(deadVal).toLocaleString('en-IN')}</div><div class="sum-sub">${deadArts.length} items blocked</div></div>
-      <div class="sum-box"><div class="sum-label">Week vs last week</div><div class="sum-val" style="color:${totalSoldWk>=totalSoldLw?'var(--green-m)':'var(--red-m)'}">${totalSoldWk>=totalSoldLw?'▲':'▼'} ${Math.abs(totalSoldWk-totalSoldLw)} units</div><div class="sum-sub">${totalSoldWk} vs ${totalSoldLw} last week</div></div>
-    </div>`;
+  document.getElementById('wk-summary').innerHTML = `<div class="sum-grid">
+    <div class="sum-box"><div class="sum-label">Week vs last week</div><div class="sum-val" style="color:${totalSoldWk>=totalSoldLw?'var(--green-m)':'var(--red-m)'}">${totalSoldWk>=totalSoldLw?'▲':'▼'} ${Math.abs(totalSoldWk-totalSoldLw)} units</div><div class="sum-sub">${totalSoldWk} vs ${totalSoldLw}</div></div>
+    <div class="sum-box"><div class="sum-label">Items to restock</div><div class="sum-val" style="color:var(--red-m)">${urgent.length}</div><div class="sum-sub">urgent action</div></div>
+    <div class="sum-box"><div class="sum-label">Dead stock value</div><div class="sum-val" style="color:var(--red-m)">₹${Math.round(deadVal).toLocaleString('en-IN')}</div><div class="sum-sub">${deadArts.length} items</div></div>
+  </div>`;
 }
 
 function sw(id, el) {
@@ -1332,11 +1503,112 @@ function sw(id, el) {
   if(tab) tab.classList.add('active');
   if(el) el.classList.add('active');
   if(id==='upload') loadUlog();
-  if(id==='weekly') { setThisWeek(); }
+  if(id==='weekly') setThisWeek();
+}
+
+// ═══════ EXPORT TO EXCEL ═══════
+function exportExcel(tab, mode) {
+  const arts = getArtStats();
+  let data = [];
+  let filename = '';
+
+  if (tab === 'inventory') {
+    let items = arts.sort((a,b)=>b.liveStock-a.liveStock);
+    if (mode === 'filtered') {
+      const catF = document.getElementById('inv-cat').value;
+      const supF = document.getElementById('inv-sup').value;
+      const brF = document.getElementById('inv-brand').value;
+      const stkF = document.getElementById('inv-stk').value;
+      const srch = document.getElementById('inv-srch').value.toLowerCase();
+      items = items.filter(a => {
+        if (catF && (a.item||'') !== catF) return false;
+        if (supF && (a.supplier||'') !== supF) return false;
+        if (brF && (a.brand||'') !== brF) return false;
+        if (stkF === 'out' && a.liveStock !== 0) return false;
+        if (stkF === 'low' && (a.liveStock < 1 || a.liveStock > 5)) return false;
+        if (stkF === 'ok' && a.liveStock < 6) return false;
+        if (srch && !(a.lotNo||'').toLowerCase().includes(srch) && !(a.item||'').toLowerCase().includes(srch)) return false;
+        return true;
+      });
+    }
+    data = items.map(a => ({
+      'Lot No': a.lotNo || '',
+      'Item': a.item || '',
+      'Brand': a.brand || '',
+      'Supplier': a.supplier || '',
+      'Size': a.size || '',
+      'Purchased': a.purchased,
+      'Sold': a.grossSold,
+      'Returned': a.returned,
+      'Live Stock': a.liveStock,
+      'Avg Cost': Math.round(a.avgCost),
+      'Stock Value': Math.round(a.stockVal),
+      'Status': a.liveStock === 0 ? 'Out of Stock' : a.liveStock <= 5 ? 'Low Stock' : 'In Stock'
+    }));
+    filename = 'PAL_LiveInventory_' + (mode === 'filtered' ? 'Filtered_' : '') + new Date().toISOString().split('T')[0] + '.xlsx';
+  }
+
+  if (tab === 'reorder') {
+    const days = parseInt(document.getElementById('ro-days').value) || 30;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+
+    let reorderItems = arts.filter(a => {
+      if (a.purchased <= 0) return false;
+      if (!a.saleDates.length) return false;
+      return a.saleDates.some(s => s.date >= cutoff);
+    }).map(a => {
+      const soldInPeriod = a.saleDates.filter(s => s.date >= cutoff).reduce((sum,s) => sum + s.qty, 0);
+      let reorderMultiplier = 1;
+      let speedClass = 'fast';
+      if (a.daysToSell !== null && a.daysToSell <= 20) { reorderMultiplier = 2; speedClass = 'super'; }
+      return { ...a, soldInPeriod, reorderMultiplier, speedClass, reorderQty: a.purchased * reorderMultiplier };
+    }).sort((a,b) => b.soldInPeriod - a.soldInPeriod);
+
+    if (mode === 'filtered') {
+      const brF = document.getElementById('ro-brand').value;
+      const supF = document.getElementById('ro-sup').value;
+      const speedF = document.getElementById('ro-speed').value;
+      const srch = document.getElementById('ro-srch').value.toLowerCase();
+      reorderItems = reorderItems.filter(r => {
+        if (brF && (r.brand||'') !== brF) return false;
+        if (supF && (r.supplier||'') !== supF) return false;
+        if (speedF && r.speedClass !== speedF) return false;
+        if (srch && !(r.lotNo||'').toLowerCase().includes(srch) && !(r.item||'').toLowerCase().includes(srch)) return false;
+        return true;
+      });
+    }
+
+    data = reorderItems.map(r => ({
+      'Lot No': r.lotNo || '',
+      'Item': r.item || '',
+      'Brand': r.brand || '',
+      'Supplier': r.supplier || '',
+      'Size': r.size || '',
+      'Purchased': r.purchased,
+      'Total Sold': r.netSold,
+      'Sold in Period': r.soldInPeriod,
+      'Days to Sell': r.daysToSell !== null ? r.daysToSell : '',
+      'Live Stock': r.liveStock,
+      'Speed': r.speedClass === 'super' ? 'Super Fast (2x)' : 'Fast (1x)',
+      'Reorder Qty': r.reorderQty
+    }));
+    filename = 'PAL_ReorderSheet_' + days + 'days_' + (mode === 'filtered' ? 'Filtered_' : '') + new Date().toISOString().split('T')[0] + '.xlsx';
+  }
+
+  if (data.length === 0) { alert('No data to export!'); return; }
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  // Auto-size columns
+  const colWidths = Object.keys(data[0]).map(k => ({ wch: Math.max(k.length, ...data.slice(0,50).map(r => String(r[k]||'').length)) + 2 }));
+  ws['!cols'] = colWidths;
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, tab === 'inventory' ? 'Live Inventory' : 'Reorder Sheet');
+  XLSX.writeFile(wb, filename);
 }
 
 async function clearData(type) {
-  if(!confirm(`Permanently delete ALL ${type} data? This cannot be undone.`)) return;
+  if(!confirm(`Permanently delete ALL ${type} data?`)) return;
   await fetch('/api/data/'+type,{method:'DELETE'});
   await loadData();
   alert(type+' data cleared.');
