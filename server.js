@@ -418,8 +418,8 @@ function parseSale(buffer) {
   if (iDate === -1 || iCompany === -1 || iQty === -1)
     throw new Error('Missing required columns: BILL DATE, COMPANY NAME, SALE QTY');
 
-  const sales             = [];
-  const purchasesFromSale = [];
+  const sales           = [];
+  const returnsFromSale = [];
 
   for (let i = headerRow + 1; i < raw.length; i++) {
     const r = raw[i] || [];
@@ -448,19 +448,16 @@ function parseSale(buffer) {
     if (qty > 0) {
       sales.push({ ...rowBase, qty: absQty });
     } else {
-      purchasesFromSale.push({
+      // Negative qty = customer return → goes to returns collection
+      returnsFromSale.push({
         ...rowBase,
-        supplier: '(From Sale File - Customer Return)',
-        billNo: '',
         qty: absQty,
-        rate: 0,
-        amount: 0,
-        note: 'Converted from negative sale qty (customer return)',
+        note: 'Auto-converted from negative sale qty',
       });
     }
   }
 
-  return { sales, purchasesFromSale };
+  return { sales, returnsFromSale };
 }
 
 // ── AUTH ROUTES ───────────────────────────────────────────────────────────────
@@ -525,9 +522,9 @@ app.post('/api/upload/:type', auth(['owner', 'staff']), upload.single('file'), a
 
       const result = parseSale(req.file.buffer);
       if (result.sales.length) await appendRows('sale', result.sales);
-      if (result.purchasesFromSale.length) await appendRows('purchase', result.purchasesFromSale);
+      if (result.returnsFromSale.length) await appendRows('returns', result.returnsFromSale);
       saleRows      = result.sales.length;
-      convertedRows = result.purchasesFromSale.length;
+      convertedRows = result.returnsFromSale.length;
       if (!saleRows && !convertedRows)
         return res.status(400).json({ error: 'No valid rows found in sale file.' });
     }
