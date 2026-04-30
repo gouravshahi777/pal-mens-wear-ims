@@ -618,7 +618,7 @@ function showPage(id) {
   // Slide-up animation when opening dashboard or staff page after login
   if (id !== 'pg-login') { target.classList.add('page-enter'); }
 }
-(async()=>{ try { const r = await fetch('/api/me'); const d = await r.json(); if (d.loggedIn) { currentRole=d.role; if(d.role==='staff') showStaff(d); else showDash(d); } } catch {} })();
+(async()=>{ try { await fetch('/api/logout',{method:'POST'}); } catch {} })();
 
 function dzo(e,t){e.preventDefault();document.getElementById('dz-'+t).classList.add('drag');}
 function dzl(t){document.getElementById('dz-'+t)?.classList.remove('drag');}
