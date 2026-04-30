@@ -24,12 +24,36 @@ input,select,button{font-family:'DM Sans',sans-serif}
 .page{display:none}.page.active{display:block}
 .tab{display:none}.tab.active{display:block}
 
-#pg-login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
-.login-box{background:var(--surf);border:1px solid var(--border);border-radius:var(--rl);padding:2.5rem;width:100%;max-width:380px}
-.llogo{display:flex;align-items:center;gap:10px;margin-bottom:2rem}
-.llogo-ic{width:42px;height:42px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;letter-spacing:-.5px}
-.llogo-t{font-size:17px;font-weight:700;color:var(--text);line-height:1.2}
+#pg-login{min-height:100vh;display:flex;align-items:stretch;padding:0;background:var(--bg)}
+.login-wrap{display:flex;width:100%;min-height:100vh}
+.login-left{flex:1;display:flex;align-items:center;justify-content:center;padding:2rem;background:var(--surf)}
+.login-right{width:45%;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.login-right .slide{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem;opacity:0;transition:opacity 1s ease;text-align:center}
+.login-right .slide.active{opacity:1}
+.slide-bg1{background:linear-gradient(135deg,#1a4a8a 0%,#2f6fd4 50%,#6a58d0 100%)}
+.slide-bg2{background:linear-gradient(135deg,#0a6b3a 0%,#18a05a 50%,#2f6fd4 100%)}
+.slide-bg3{background:linear-gradient(135deg,#3a2888 0%,#6a58d0 50%,#d4537e 100%)}
+.slide-bg4{background:linear-gradient(135deg,#7a4d0a 0%,#e89008 50%,#d85a30 100%)}
+.slide-icon{font-size:52px;margin-bottom:1rem}
+.slide-title{font-size:26px;font-weight:700;color:#fff;margin-bottom:8px;letter-spacing:-.5px}
+.slide-desc{font-size:14px;color:rgba(255,255,255,.85);max-width:320px;line-height:1.5}
+.slide-dots{position:absolute;bottom:2rem;display:flex;gap:8px}
+.slide-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.35);transition:all .3s}
+.slide-dot.active{background:#fff;width:22px;border-radius:4px}
+@media(max-width:768px){.login-right{display:none}.login-wrap{flex-direction:column}}
+.login-box{width:100%;max-width:400px}
+.llogo{display:flex;align-items:center;gap:12px;margin-bottom:.5rem}
+.llogo-ic{width:48px;height:48px;background:var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;letter-spacing:-.5px}
+.llogo-t{font-size:20px;font-weight:700;color:var(--text);line-height:1.2}
 .llogo-s{font-size:11px;color:var(--muted)}
+.login-welcome{font-size:13px;color:var(--muted);margin:1.2rem 0 1.5rem;line-height:1.5}
+.role-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:1.5rem}
+.role-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 10px;border:2px solid var(--border);border-radius:var(--rl);cursor:pointer;transition:all .2s;background:var(--bg)}
+.role-card:hover{border-color:var(--blue-m);background:var(--blue-l)}
+.role-card.selected{border-color:var(--blue-m);background:var(--blue-l);box-shadow:0 0 0 3px rgba(47,111,212,.15)}
+.role-av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700}
+.role-name{font-size:12px;font-weight:700;color:var(--text)}
+.role-desc{font-size:9px;color:var(--muted);text-align:center}
 .fl{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px}
 .fi{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:14px;outline:none;margin-bottom:12px}
 .fi:focus{border-color:var(--blue-m)}
@@ -163,20 +187,70 @@ tbody tr:hover td{background:var(--bg)}
 
 <!-- LOGIN -->
 <div id="pg-login" class="page active">
-  <div class="login-box">
-    <div class="llogo">
-      <div class="llogo-ic">PMW</div>
-      <div>
-        <div class="llogo-t">PAL MENS WEAR</div>
-        <div class="llogo-s">Inventory Management System</div>
+  <div class="login-wrap">
+    <div class="login-left">
+      <div class="login-box">
+        <div class="llogo">
+          <div class="llogo-ic">PMW</div>
+          <div>
+            <div class="llogo-t">PAL MENS WEAR</div>
+            <div class="llogo-s">Inventory Management System</div>
+          </div>
+        </div>
+        <div class="login-welcome">Welcome back! Select your role and enter your password to continue.</div>
+        <div class="lerr" id="lerr"></div>
+        <label class="fl">Select Role</label>
+        <div class="role-grid">
+          <div class="role-card selected" onclick="selectRole('owner',this)">
+            <div class="role-av" style="background:var(--blue-l);color:var(--blue)">👑</div>
+            <div class="role-name">Owner</div>
+            <div class="role-desc">Full access</div>
+          </div>
+          <div class="role-card" onclick="selectRole('manager',this)">
+            <div class="role-av" style="background:var(--green-l);color:var(--green)">📊</div>
+            <div class="role-name">Manager</div>
+            <div class="role-desc">View reports</div>
+          </div>
+          <div class="role-card" onclick="selectRole('staff',this)">
+            <div class="role-av" style="background:var(--amber-l);color:var(--amber)">📤</div>
+            <div class="role-name">Staff</div>
+            <div class="role-desc">Upload only</div>
+          </div>
+        </div>
+        <input type="hidden" id="uname" value="owner">
+        <label class="fl">Password</label>
+        <input class="fi" id="upass" type="password" placeholder="Enter your password">
+        <button class="btn-login" onclick="doLogin()">Sign In →</button>
       </div>
     </div>
-    <div class="lerr" id="lerr"></div>
-    <label class="fl">Username</label>
-    <input class="fi" id="uname" type="text" placeholder="owner / manager / staff">
-    <label class="fl">Password</label>
-    <input class="fi" id="upass" type="password" placeholder="Enter password">
-    <button class="btn-login" onclick="doLogin()">Sign In</button>
+    <div class="login-right">
+      <div class="slide slide-bg1 active">
+        <div class="slide-icon">📦</div>
+        <div class="slide-title">Live Inventory</div>
+        <div class="slide-desc">Track every item in real-time. Know exactly what's in stock, what's selling fast, and what needs reordering.</div>
+      </div>
+      <div class="slide slide-bg2">
+        <div class="slide-icon">📈</div>
+        <div class="slide-title">Smart Reports</div>
+        <div class="slide-desc">Brand analysis, fast movers, dead stock alerts, and weekly reports — all automatically generated.</div>
+      </div>
+      <div class="slide slide-bg3">
+        <div class="slide-icon">🛒</div>
+        <div class="slide-title">Reorder Sheet</div>
+        <div class="slide-desc">Never run out of stock. The system tells you exactly what to buy and how much, based on sales speed.</div>
+      </div>
+      <div class="slide slide-bg4">
+        <div class="slide-icon">📥</div>
+        <div class="slide-title">Excel Export</div>
+        <div class="slide-desc">Download any report as Excel with one click. Filter by supplier, brand, or item — then export.</div>
+      </div>
+      <div class="slide-dots">
+        <div class="slide-dot active"></div>
+        <div class="slide-dot"></div>
+        <div class="slide-dot"></div>
+        <div class="slide-dot"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -578,6 +652,28 @@ let lastSalData = [];
 
 // ═══════ NORMALIZE HELPER — trims and normalizes strings for comparison ═══════
 function norm(s) { return (s||'').trim().replace(/\s+/g,' '); }
+
+// ═══════ ROLE SELECTION ═══════
+function selectRole(role, el) {
+  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('uname').value = role;
+}
+
+// ═══════ LOGIN SLIDESHOW ═══════
+(function() {
+  let slideIdx = 0;
+  setInterval(() => {
+    const slides = document.querySelectorAll('.slide');
+    const dots = document.querySelectorAll('.slide-dot');
+    if (!slides.length) return;
+    slides.forEach(s => s.classList.remove('active'));
+    dots.forEach(d => d.classList.remove('active'));
+    slideIdx = (slideIdx + 1) % slides.length;
+    slides[slideIdx].classList.add('active');
+    dots[slideIdx].classList.add('active');
+  }, 3500);
+})();
 
 async function doLogin() {
   const u = document.getElementById('uname').value.trim();
