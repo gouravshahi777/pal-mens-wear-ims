@@ -295,6 +295,7 @@ tbody tr:hover td{background:var(--bg)}
           <div class="ct">All articles — current stock</div>
           <div class="frow">
             <select class="fs" id="inv-cat" onchange="renderInv()"><option value="">All items</option></select>
+            <select class="fs" id="inv-grp" onchange="renderInv()"><option value="">All groups</option></select>
             <select class="fs" id="inv-sup" onchange="renderInv()"><option value="">All suppliers</option></select>
             <select class="fs" id="inv-brand" onchange="renderInv()"><option value="">All brands</option></select>
             <select class="fs" id="inv-stk" onchange="renderInv()">
@@ -307,7 +308,7 @@ tbody tr:hover td{background:var(--bg)}
             <button class="btn-excel" onclick="exportInv()">📥 Excel</button>
           </div>
           <div class="tw"><table>
-            <thead><tr><th>Lot No.</th><th>Item</th><th>Brand</th><th>Supplier</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Returned</th><th>Live Stock</th><th>Avg Cost</th><th>Stock Value</th><th>Status</th></tr></thead>
+            <thead><tr><th>Lot No.</th><th>Item</th><th>Group</th><th>Brand</th><th>Supplier</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Returned</th><th>Live Stock</th><th>Avg Cost</th><th>Stock Value</th><th>Status</th></tr></thead>
             <tbody id="inv-body"></tbody>
           </table></div>
         </div>
@@ -339,7 +340,7 @@ tbody tr:hover td{background:var(--bg)}
         <div class="card">
           <div class="ct">Items to reorder</div>
           <div class="tw"><table>
-            <thead><tr><th>Lot No.</th><th>Item</th><th>Brand</th><th>Supplier</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Sold in period</th><th>Days to sell</th><th>Live Stock</th><th>Speed</th><th style="background:var(--green-l);color:var(--green)">Reorder Qty</th></tr></thead>
+            <thead><tr><th>Lot No.</th><th>Item</th><th>Group</th><th>Brand</th><th>Supplier</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Sold in period</th><th>Days to sell</th><th>Live Stock</th><th>Speed</th><th style="background:var(--green-l);color:var(--green)">Reorder Qty</th></tr></thead>
             <tbody id="ro-body"></tbody>
           </table></div>
         </div>
@@ -399,7 +400,7 @@ tbody tr:hover td{background:var(--bg)}
             <button class="btn-excel" onclick="exportFM()">📥 Excel</button>
           </div>
           <div class="tw"><table>
-            <thead><tr><th>#</th><th>Lot No.</th><th>Item</th><th>Brand</th><th>Size</th><th>Gross Sold</th><th>Returned</th><th>Net Sold</th><th>Speed</th></tr></thead>
+            <thead><tr><th>#</th><th>Lot No.</th><th>Item</th><th>Group</th><th>Brand</th><th>Size</th><th>Gross Sold</th><th>Returned</th><th>Net Sold</th><th>Speed</th></tr></thead>
             <tbody id="fm-body"></tbody>
           </table></div>
         </div>
@@ -458,7 +459,7 @@ tbody tr:hover td{background:var(--bg)}
         <div class="card">
           <div class="ct" style="display:flex;justify-content:space-between;align-items:center">Dead stock register <button class="btn-excel" onclick="exportDead()">📥 Excel</button></div>
           <div class="tw"><table>
-            <thead><tr><th>Lot No.</th><th>Item</th><th>Supplier</th><th>Size</th><th>Live Stock</th><th>Avg Cost ₹</th><th>Value Blocked ₹</th><th>Last Sale</th><th>Days Unsold</th><th>Action</th></tr></thead>
+            <thead><tr><th>Lot No.</th><th>Item</th><th>Group</th><th>Supplier</th><th>Size</th><th>Live Stock</th><th>Avg Cost ₹</th><th>Value Blocked ₹</th><th>Last Sale</th><th>Days Unsold</th><th>Action</th></tr></thead>
             <tbody id="ds-body"></tbody>
           </table></div>
         </div>
@@ -618,7 +619,7 @@ function showPage(id) {
   if (id !== 'pg-login') { target.classList.add('page-enter'); }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-(async()=>{ try { await fetch('/api/logout',{method:'POST'}); } catch {} })();
+// Always start on login page — no auto-login from old sessions
 
 function dzo(e,t){e.preventDefault();document.getElementById('dz-'+t).classList.add('drag');}
 function dzl(t){document.getElementById('dz-'+t)?.classList.remove('drag');}
@@ -875,12 +876,14 @@ function buildInventory() {
 function renderInv() {
   const arts=getArtStats().sort((a,b)=>b.liveStock-a.liveStock);
   const catF=document.getElementById('inv-cat').value;
+  const grpF=document.getElementById('inv-grp').value;
   const supF=document.getElementById('inv-sup').value;
   const brF=document.getElementById('inv-brand').value;
   const stkF=document.getElementById('inv-stk').value;
   const srch=document.getElementById('inv-srch').value.toLowerCase();
   const f=arts.filter(a=>{
     if(catF && a.item!==catF) return false;
+    if(grpF && a.group!==grpF) return false;
     if(supF && a.supplier!==supF) return false;
     if(brF && a.brand!==brF) return false;
     if(stkF==='out'&&a.liveStock!==0) return false;
@@ -893,6 +896,7 @@ function renderInv() {
   document.getElementById('inv-body').innerHTML=f.slice(0,300).map(a=>`<tr>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
     <td style="font-weight:600">${a.item||'—'}</td>
+    <td>${a.group||'—'}</td>
     <td>${a.brand||'—'}</td>
     <td>${a.supplier||'—'}</td>
     <td>${a.size||'—'}</td>
@@ -902,12 +906,12 @@ function renderInv() {
     <td>₹${Math.round(a.avgCost)}</td>
     <td>₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td>
     <td><span class="tag ${a.liveStock===0?'tr':a.liveStock<=5?'ta':'tg'}">${a.liveStock===0?'Out':a.liveStock<=5?'Low':'In stock'}</span></td>
-  </tr>`).join('')||noData(12);
+  </tr>`).join('')||noData(13);
 }
 
 function exportInv() {
-  const d = lastInvData.map(a=>[a.lotNo,a.item,a.brand,a.supplier,a.size,a.purchased,a.grossSold,a.returned,a.liveStock,Math.round(a.avgCost),Math.round(a.stockVal),a.liveStock===0?'Out':a.liveStock<=5?'Low':'In stock']);
-  downloadExcel(d,['Lot No','Item','Brand','Supplier','Size','Purchased','Sold','Returned','Live Stock','Avg Cost','Stock Value','Status'],'PAL_Inventory_'+new Date().toISOString().split('T')[0]);
+  const d = lastInvData.map(a=>[a.lotNo,a.item,a.group,a.brand,a.supplier,a.size,a.purchased,a.grossSold,a.returned,a.liveStock,Math.round(a.avgCost),Math.round(a.stockVal),a.liveStock===0?'Out':a.liveStock<=5?'Low':'In stock']);
+  downloadExcel(d,['Lot No','Item','Group','Brand','Supplier','Size','Purchased','Sold','Returned','Live Stock','Avg Cost','Stock Value','Status'],'PAL_Inventory_'+new Date().toISOString().split('T')[0]);
 }
 
 // ═══════ REORDER SHEET ═══════
@@ -974,6 +978,7 @@ function renderReorder() {
     return `<tr>
       <td style="font-family:'DM Mono',monospace;font-size:10px">${r.lotNo||'—'}</td>
       <td style="font-weight:600">${r.item||'—'}</td>
+      <td>${r.group||'—'}</td>
       <td>${r.brand||'—'}</td>
       <td>${r.supplier||'—'}</td>
       <td>${r.size||'—'}</td>
@@ -989,8 +994,8 @@ function renderReorder() {
 }
 
 function exportReorder() {
-  const d = lastReorderData.map(r=>[r.lotNo,r.item,r.brand,r.supplier,r.size,r.purchased,r.netSold,r.soldInPeriod,r.daysToSell||'—',r.liveStock,r.speedClass==='super'?'Super Fast (2×)':'Fast (1×)',r.reorderQty]);
-  downloadExcel(d,['Lot No','Item','Brand','Supplier','Size','Purchased','Sold','Sold in Period','Days to Sell','Live Stock','Speed','Reorder Qty'],'PAL_Reorder_'+new Date().toISOString().split('T')[0]);
+  const d = lastReorderData.map(r=>[r.lotNo,r.item,r.group,r.brand,r.supplier,r.size,r.purchased,r.netSold,r.soldInPeriod,r.daysToSell||'—',r.liveStock,r.speedClass==='super'?'Super Fast (2×)':'Fast (1×)',r.reorderQty]);
+  downloadExcel(d,['Lot No','Item','Group','Brand','Supplier','Size','Purchased','Sold','Sold in Period','Days to Sell','Live Stock','Speed','Reorder Qty'],'PAL_Reorder_'+new Date().toISOString().split('T')[0]);
 }
 
 // ═══════ COMPANY-WISE STOCK ═══════
@@ -1019,13 +1024,13 @@ function renderCompanyStock() {
   setMG('cw-m',[{l:'Total companies',v:groups.length},{l:'Total stock',v:groups.reduce((s,g)=>s+g.totalStock,0).toLocaleString()+' units'},{l:'Total value',v:'₹'+Math.round(groups.reduce((s,g)=>s+g.totalValue,0)).toLocaleString('en-IN')},{l:'Top company',v:groups[0]?groups[0].brand:'—',s:groups[0]?groups[0].totalStock+' units':''}]);
   document.getElementById('cw-list').innerHTML = groups.map((g, idx) => `
     <div class="group-card"><div class="group-head" onclick="toggleGroup('cw-body-${idx}', this.querySelector('.chev'))"><div><div class="group-title">${g.brand}</div><div class="group-stats"><span><span class="group-stat-val">${g.articles.length}</span> items</span><span><span class="group-stat-val">${g.totalStock.toLocaleString()}</span> in stock</span><span><span class="group-stat-val">${g.totalPurchased.toLocaleString()}</span> purchased</span><span><span class="group-stat-val">${g.totalSold.toLocaleString()}</span> sold</span><span>Value <span class="group-stat-val">₹${Math.round(g.totalValue).toLocaleString('en-IN')}</span></span></div></div><div class="chev">▶</div></div>
-      <div class="group-body" id="cw-body-${idx}"><div class="tw"><table><thead><tr><th>Lot No.</th><th>Item</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Live Stock</th><th>Avg Cost</th><th>Value</th></tr></thead><tbody>${g.articles.sort((a,b)=>b.liveStock-a.liveStock).map(a=>`<tr><td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td><td style="font-weight:600">${a.item||'—'}</td><td>${a.size||'—'}</td><td>${a.purchased}</td><td>${a.netSold}</td><td style="font-weight:700;color:${a.liveStock===0?'var(--red-m)':a.liveStock<=5?'var(--amber-m)':'var(--green-m)'}">${a.liveStock}</td><td>₹${Math.round(a.avgCost)}</td><td style="font-weight:600">₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td></tr>`).join('')}</tbody></table></div></div></div>`).join('') || '<div class="empty">No company data yet — upload files</div>';
+      <div class="group-body" id="cw-body-${idx}"><div class="tw"><table><thead><tr><th>Lot No.</th><th>Item</th><th>Group</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Live Stock</th><th>Avg Cost</th><th>Value</th></tr></thead><tbody>${g.articles.sort((a,b)=>b.liveStock-a.liveStock).map(a=>`<tr><td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td><td style="font-weight:600">${a.item||'—'}</td><td>${a.group||'—'}</td><td>${a.size||'—'}</td><td>${a.purchased}</td><td>${a.netSold}</td><td style="font-weight:700;color:${a.liveStock===0?'var(--red-m)':a.liveStock<=5?'var(--amber-m)':'var(--green-m)'}">${a.liveStock}</td><td>₹${Math.round(a.avgCost)}</td><td style="font-weight:600">₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td></tr>`).join('')}</tbody></table></div></div></div>`).join('') || '<div class="empty">No company data yet — upload files</div>';
 }
 
 function exportCompanyStock() {
   const arts = getArtStats();
-  const d = arts.map(a=>[a.brand||'Unknown',a.lotNo,a.item,a.size,a.purchased,a.netSold,a.liveStock,Math.round(a.avgCost),Math.round(a.stockVal)]);
-  downloadExcel(d,['Brand','Lot No','Item','Size','Purchased','Sold','Live Stock','Avg Cost','Stock Value'],'PAL_CompanyStock_'+new Date().toISOString().split('T')[0]);
+  const d = arts.map(a=>[a.brand||'Unknown',a.lotNo,a.item,a.group,a.size,a.purchased,a.netSold,a.liveStock,Math.round(a.avgCost),Math.round(a.stockVal)]);
+  downloadExcel(d,['Brand','Lot No','Item','Group','Size','Purchased','Sold','Live Stock','Avg Cost','Stock Value'],'PAL_CompanyStock_'+new Date().toISOString().split('T')[0]);
 }
 
 function toggleGroup(id, chev) { const el = document.getElementById(id); if (el) { el.classList.toggle('open'); chev?.classList.toggle('open'); } }
@@ -1056,13 +1061,13 @@ function renderSupplierStock() {
   setMG('sw-m',[{l:'Total suppliers',v:groups.length},{l:'Total stock',v:groups.reduce((s,g)=>s+g.totalStock,0).toLocaleString()+' units'},{l:'Total value',v:'₹'+Math.round(groups.reduce((s,g)=>s+g.totalValue,0)).toLocaleString('en-IN')},{l:'Top supplier',v:groups[0]?groups[0].supplier:'—',s:groups[0]?groups[0].totalStock+' units':''}]);
   document.getElementById('sw-list').innerHTML = groups.map((g, idx) => `
     <div class="group-card"><div class="group-head" onclick="toggleGroup('sw-body-${idx}', this.querySelector('.chev'))"><div><div class="group-title">${g.supplier}</div><div class="group-stats"><span><span class="group-stat-val">${g.articles.length}</span> items</span><span><span class="group-stat-val">${g.totalStock.toLocaleString()}</span> in stock</span><span><span class="group-stat-val">${g.totalPurchased.toLocaleString()}</span> purchased</span><span><span class="group-stat-val">${g.totalSold.toLocaleString()}</span> sold</span><span>Value <span class="group-stat-val">₹${Math.round(g.totalValue).toLocaleString('en-IN')}</span></span></div></div><div class="chev">▶</div></div>
-      <div class="group-body" id="sw-body-${idx}"><div class="tw"><table><thead><tr><th>Lot No.</th><th>Item</th><th>Brand</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Live Stock</th><th>Avg Cost</th><th>Value</th></tr></thead><tbody>${g.articles.sort((a,b)=>b.liveStock-a.liveStock).map(a=>`<tr><td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td><td style="font-weight:600">${a.item||'—'}</td><td>${a.brand||'—'}</td><td>${a.size||'—'}</td><td>${a.purchased}</td><td>${a.netSold}</td><td style="font-weight:700;color:${a.liveStock===0?'var(--red-m)':a.liveStock<=5?'var(--amber-m)':'var(--green-m)'}">${a.liveStock}</td><td>₹${Math.round(a.avgCost)}</td><td style="font-weight:600">₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td></tr>`).join('')}</tbody></table></div></div></div>`).join('') || '<div class="empty">No supplier data yet — upload files</div>';
+      <div class="group-body" id="sw-body-${idx}"><div class="tw"><table><thead><tr><th>Lot No.</th><th>Item</th><th>Group</th><th>Brand</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Live Stock</th><th>Avg Cost</th><th>Value</th></tr></thead><tbody>${g.articles.sort((a,b)=>b.liveStock-a.liveStock).map(a=>`<tr><td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td><td style="font-weight:600">${a.item||'—'}</td><td>${a.group||'—'}</td><td>${a.brand||'—'}</td><td>${a.size||'—'}</td><td>${a.purchased}</td><td>${a.netSold}</td><td style="font-weight:700;color:${a.liveStock===0?'var(--red-m)':a.liveStock<=5?'var(--amber-m)':'var(--green-m)'}">${a.liveStock}</td><td>₹${Math.round(a.avgCost)}</td><td style="font-weight:600">₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td></tr>`).join('')}</tbody></table></div></div></div>`).join('') || '<div class="empty">No supplier data yet — upload files</div>';
 }
 
 function exportSupplierStock() {
   const arts = getArtStats();
-  const d = arts.map(a=>[a.supplier||'Unknown',a.lotNo,a.item,a.brand,a.size,a.purchased,a.netSold,a.liveStock,Math.round(a.avgCost),Math.round(a.stockVal)]);
-  downloadExcel(d,['Supplier','Lot No','Item','Brand','Size','Purchased','Sold','Live Stock','Avg Cost','Stock Value'],'PAL_SupplierStock_'+new Date().toISOString().split('T')[0]);
+  const d = arts.map(a=>[a.supplier||'Unknown',a.lotNo,a.item,a.group,a.brand,a.size,a.purchased,a.netSold,a.liveStock,Math.round(a.avgCost),Math.round(a.stockVal)]);
+  downloadExcel(d,['Supplier','Lot No','Item','Group','Brand','Size','Purchased','Sold','Live Stock','Avg Cost','Stock Value'],'PAL_SupplierStock_'+new Date().toISOString().split('T')[0]);
 }
 
 function buildFastMovers() {
@@ -1093,6 +1098,7 @@ function renderFM() {
     <td><div class="rk ${i<3?'r'+(i+1):'rn'}">${i+1}</div></td>
     <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
     <td style="font-weight:600">${a.item||'—'}</td>
+    <td>${a.group||'—'}</td>
     <td>${a.brand||'—'}</td>
     <td>${a.size||'—'}</td>
     <td>${a.grossSold}</td>
@@ -1103,8 +1109,8 @@ function renderFM() {
 }
 
 function exportFM() {
-  const d = lastFMData.map((a,i)=>[i+1,a.lotNo,a.item,a.brand,a.size,a.grossSold,a.returned,a.netSold,avgDayText(a)]);
-  downloadExcel(d,['#','Lot No','Item','Brand','Size','Gross Sold','Returned','Net Sold','Speed'],'PAL_FastMovers_'+new Date().toISOString().split('T')[0]);
+  const d = lastFMData.map((a,i)=>[i+1,a.lotNo,a.item,a.group,a.brand,a.size,a.grossSold,a.returned,a.netSold,avgDayText(a)]);
+  downloadExcel(d,['#','Lot No','Item','Group','Brand','Size','Gross Sold','Returned','Net Sold','Speed'],'PAL_FastMovers_'+new Date().toISOString().split('T')[0]);
 }
 
 function buildBrands() {
@@ -1168,14 +1174,14 @@ function buildDead() {
   dead.forEach(a=>{supM[a.supplier||'Unknown']=(supM[a.supplier||'Unknown']||0)+1;itemM[a.item||'Unknown']=(itemM[a.item||'Unknown']||0)+a.liveStock;});
   mkBars('ds-sup-bars',Object.entries(supM).sort((a,b)=>b[1]-a[1]).map(([s,n])=>({s,n})),'s','n',['#d85a30']);
   mkBars('ds-item-bars',Object.entries(itemM).sort((a,b)=>b[1]-a[1]).map(([item,n])=>({item,n})),'item','n',['#e89008']);
-  document.getElementById('ds-body').innerHTML=dead.slice(0,100).map(a=>`<tr><td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td><td style="font-weight:600">${a.item||'—'}</td><td>${a.supplier||'—'}</td><td>${a.size||'—'}</td><td style="font-weight:700">${a.liveStock}</td><td>₹${Math.round(a.avgCost)}</td><td style="font-weight:700;color:var(--red-m)">₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td><td>${a.lastSale?a.lastSale.toLocaleDateString('en-IN'):'Never'}</td><td style="color:var(--red-m);font-weight:700">${a.daysSince>=9999?'Never':a.daysSince+' days'}</td><td><span class="tag ${a.daysSince>=180?'tr':a.daysSince>=120?'ta':'tgr'}">${a.daysSince>=180?'Clearance':a.daysSince>=120?'30% off':'20% off'}</span></td></tr>`).join('')||noData(10);
+  document.getElementById('ds-body').innerHTML=dead.slice(0,100).map(a=>`<tr><td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td><td style="font-weight:600">${a.item||'—'}</td><td>${a.group||'—'}</td><td>${a.supplier||'—'}</td><td>${a.size||'—'}</td><td style="font-weight:700">${a.liveStock}</td><td>₹${Math.round(a.avgCost)}</td><td style="font-weight:700;color:var(--red-m)">₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td><td>${a.lastSale?a.lastSale.toLocaleDateString('en-IN'):'Never'}</td><td style="color:var(--red-m);font-weight:700">${a.daysSince>=9999?'Never':a.daysSince+' days'}</td><td><span class="tag ${a.daysSince>=180?'tr':a.daysSince>=120?'ta':'tgr'}">${a.daysSince>=180?'Clearance':a.daysSince>=120?'30% off':'20% off'}</span></td></tr>`).join('')||noData(11);
 }
 
 function exportDead() {
   const arts=getArtStats();
   const dead=arts.filter(a=>a.daysSince>=90&&a.liveStock>0).sort((a,b)=>b.daysSince-a.daysSince);
-  const d = dead.map(a=>[a.lotNo,a.item,a.supplier,a.size,a.liveStock,Math.round(a.avgCost),Math.round(a.stockVal),a.lastSale?a.lastSale.toLocaleDateString('en-IN'):'Never',a.daysSince>=9999?'Never':a.daysSince,a.daysSince>=180?'Clearance':a.daysSince>=120?'30% off':'20% off']);
-  downloadExcel(d,['Lot No','Item','Supplier','Size','Live Stock','Avg Cost','Value Blocked','Last Sale','Days Unsold','Action'],'PAL_DeadStock_'+new Date().toISOString().split('T')[0]);
+  const d = dead.map(a=>[a.lotNo,a.item,a.group,a.supplier,a.size,a.liveStock,Math.round(a.avgCost),Math.round(a.stockVal),a.lastSale?a.lastSale.toLocaleDateString('en-IN'):'Never',a.daysSince>=9999?'Never':a.daysSince,a.daysSince>=180?'Clearance':a.daysSince>=120?'30% off':'20% off']);
+  downloadExcel(d,['Lot No','Item','Group','Supplier','Size','Live Stock','Avg Cost','Value Blocked','Last Sale','Days Unsold','Action'],'PAL_DeadStock_'+new Date().toISOString().split('T')[0]);
 }
 
 function buildPurReg() { renderPur(); }
@@ -1230,1307 +1236,8 @@ function populateFilters() {
   const items=[...new Set(G.purchase.map(r=>norm(r.item)).filter(Boolean))].sort();
   const allBrands = [...new Set([...brs, ...G.purchase.map(r=>norm(r.brand)).filter(Boolean)])].sort();
   const setOpts=(id,vals,label)=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option value="${v}">${v}</option>`).join('');el.value=cur;};
-  setOpts('inv-cat',cats,'All items');setOpts('inv-sup',sups,'All suppliers');setOpts('inv-brand',allBrands,'All brands');
-  setOpts('fm-cat',cats,'All items');setOpts('fm-br',brs,'All brands');
-  setOpts('br-cat',[...new Set(G.sale.map(r=>norm(r.category)).filter(Boolean))].sort(),'All categories');
-  setOpts('pur-sup',sups,'All suppliers');setOpts('pur-item',items,'All items');
-  setOpts('sal-br',brs,'All brands');setOpts('sal-cat',[...new Set(G.sale.map(r=>norm(r.category)).filter(Boolean))].sort(),'All categories');
-  setOpts('ro-brand',allBrands,'All brands');setOpts('ro-sup',sups,'All suppliers');
-}
-
-function setThisWeek() {
-  const today = new Date();
-  const day = today.getDay();
-  const sunday = new Date(today);
-  sunday.setDate(today.getDate() + (7 - day) % 7);
-  if (day === 0) sunday.setDate(sunday.getDate() + 7);
-  document.getElementById('wk-date').value = sunday.toISOString().split('T')[0];
-  buildWeekly();
-}
-
-function buildWeekly() {
-  const dateEl = document.getElementById('wk-date');
-  if (!dateEl.value) { setThisWeek(); return; }
-  const weekEnd   = new Date(dateEl.value + 'T23:59:59');
-  const weekStart = new Date(weekEnd); weekStart.setDate(weekEnd.getDate() - 6);
-  const lastStart = new Date(weekStart); lastStart.setDate(weekStart.getDate() - 7);
-  const lastEnd   = new Date(weekStart); lastEnd.setDate(weekStart.getDate() - 1);
-  const fmt = d => d.toLocaleDateString('en-IN', {day:'numeric',month:'short'});
-  document.getElementById('wk-sub').textContent = `Week: ${fmt(weekStart)} – ${fmt(weekEnd)}  |  vs: ${fmt(lastStart)} – ${fmt(lastEnd)}`;
-  const thisWeek = {}, lastWeek = {};
-  G.sale.forEach(r => {
-    if (!r.date) return;
-    const d = new Date(r.date + 'T00:00:00');
-    const k = norm(r.lotNo)+'|'+norm(r.item)+'|'+norm(r.size);
-    if (d >= weekStart && d <= weekEnd) { if (!thisWeek[k]) thisWeek[k] = { lotNo:norm(r.lotNo), item:norm(r.item), brand:norm(r.brand), size:norm(r.size), qty:0 }; thisWeek[k].qty += r.qty; }
-    if (d >= lastStart && d <= lastEnd) { if (!lastWeek[k]) lastWeek[k] = { qty:0 }; lastWeek[k].qty += r.qty; }
-  });
-  const arts = getArtStats();
-  const artByKey = {};
-  arts.forEach(a => { artByKey[a.lotNo+'|'+a.item+'|'+a.size] = a; });
-  const enriched = Object.entries(thisWeek).map(([k, tw]) => {
-    const lw = lastWeek[k] || { qty:0 };
-    const art = artByKey[k] || { liveStock:0, avgCost:0, supplier:'' };
-    const velocity = tw.qty / 7;
-    const daysCover = velocity > 0 ? Math.floor(art.liveStock / velocity) : 999;
-    return { ...tw, lw: lw.qty, art, daysCover };
-  }).sort((a,b) => b.qty - a.qty);
-  const totalSoldWk = enriched.reduce((s,r)=>s+r.qty,0);
-  const totalSoldLw = enriched.reduce((s,r)=>s+r.lw,0);
-  const urgentCount = enriched.filter(r=>r.daysCover<7&&r.art.liveStock<=5).length;
-  const deadArts = arts.filter(a=>a.daysSince>=90&&a.liveStock>0);
-  const deadVal = deadArts.reduce((s,a)=>s+a.stockVal,0);
-  const urgent = enriched.filter(r => r.art.liveStock <= 5 && r.qty >= 3);
-  document.getElementById('wk-urgent').innerHTML = urgent.length === 0 ? '<div style="font-size:12px;color:var(--green-m);font-weight:600;margin-bottom:8px">✓ No urgent restocks needed</div>' : `<div style="font-size:12px;color:var(--red-m);font-weight:600;margin-bottom:8px">⚠️ ${urgent.length} items need urgent restock</div>`;
-  document.getElementById('wk-urgent-tbl').innerHTML = urgent.slice(0,20).map(r=>`<tr><td style="font-family:'DM Mono',monospace;font-size:10px">${r.lotNo||'—'}</td><td style="font-weight:700">${r.item||'—'}</td><td>${r.art.supplier||r.brand||'—'}</td><td>${r.size||'—'}</td><td style="font-weight:700;color:var(--green-m)">${r.qty}</td><td style="font-weight:700;color:${r.art.liveStock===0?'var(--red-m)':'var(--amber-m)'}">${r.art.liveStock}</td><td style="color:var(--red-m);font-weight:700">${r.daysCover>=999?'—':r.daysCover+' days'}</td><td><span class="tag tr">Order Now</span></td></tr>`).join('')||'<tr><td colspan="8" class="empty">None</td></tr>';
-  document.getElementById('wk-fast-tbl').innerHTML = enriched.slice(0,15).map((r,i)=>{const change=r.qty-r.lw;const trend=change>0?`<span class="trend-up">▲ +${change}</span>`:change<0?`<span class="trend-dn">▼ ${change}</span>`:'<span class="trend-eq">—</span>';return `<tr><td><div class="rk ${i<3?'r'+(i+1):'rn'}">${i+1}</div></td><td style="font-family:'DM Mono',monospace;font-size:10px">${r.lotNo||'—'}</td><td style="font-weight:700">${r.item||'—'}</td><td>${r.brand||'—'}</td><td>${r.size||'—'}</td><td style="font-weight:700;color:var(--green-m)">${r.qty}</td><td>${r.lw}</td><td>${trend}</td></tr>`;}).join('')||'<tr><td colspan="8" class="empty">No sales this week</td></tr>';
-  document.getElementById('wk-dead-summary').innerHTML = deadArts.length > 0 ? `<div style="padding:8px 14px;background:var(--red-l);border-radius:var(--r);font-size:12px;color:var(--red-m);font-weight:700;display:inline-block">${deadArts.length} items unsold 90+ days · ₹${Math.round(deadVal).toLocaleString('en-IN')} blocked</div>` : '<div style="font-size:12px;color:var(--green-m);font-weight:600">✓ No dead stock</div>';
-  document.getElementById('wk-dead-tbl').innerHTML = deadArts.slice(0,30).map(a=>`<tr><td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td><td style="font-weight:700">${a.item||'—'}</td><td>${a.supplier||'—'}</td><td>${a.size||'—'}</td><td style="font-weight:700">${a.liveStock}</td><td style="font-weight:700;color:var(--red-m)">₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td><td style="color:var(--red-m);font-weight:700">${a.daysSince>=9999?'Never':a.daysSince+' days'}</td><td><span class="tag ${a.daysSince>=180?'tr':'ta'}">${a.daysSince>=180?'Clearance':'Discount'}</span></td></tr>`).join('')||'<tr><td colspan="8" class="empty">No dead stock</td></tr>';
-  setMG('wk-m',[{l:'Total sold this week',v:totalSoldWk,s:totalSoldWk>totalSoldLw?'▲ up':'▼ down',c:totalSoldWk>=totalSoldLw?'up':'dn'},{l:'Last week sales',v:totalSoldLw},{l:'Restock urgently',v:urgentCount,c:urgentCount>0?'dn':'up'},{l:'Dead stock items',v:deadArts.length,c:'dn'},{l:'Dead stock value',v:'₹'+Math.round(deadVal).toLocaleString('en-IN'),c:'dn'},{l:'Items sold',v:enriched.length}]);
-  document.getElementById('wk-summary').innerHTML = `<div class="sum-grid"><div class="sum-box"><div class="sum-label">Week vs last week</div><div class="sum-val" style="color:${totalSoldWk>=totalSoldLw?'var(--green-m)':'var(--red-m)'}">${totalSoldWk>=totalSoldLw?'▲':'▼'} ${Math.abs(totalSoldWk-totalSoldLw)} units</div><div class="sum-sub">${totalSoldWk} vs ${totalSoldLw}</div></div><div class="sum-box"><div class="sum-label">Items to restock</div><div class="sum-val" style="color:var(--red-m)">${urgent.length}</div><div class="sum-sub">urgent action</div></div><div class="sum-box"><div class="sum-label">Dead stock value</div><div class="sum-val" style="color:var(--red-m)">₹${Math.round(deadVal).toLocaleString('en-IN')}</div><div class="sum-sub">${deadArts.length} items</div></div></div>`;
-}
-
-function sw(id, el) {
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.sb-item').forEach(s=>s.classList.remove('active'));
-  const tab=document.getElementById('tab-'+id);
-  if(tab) tab.classList.add('active');
-  if(el) el.classList.add('active');
-  if(id==='upload') loadUlog();
-  if(id==='weekly') setThisWeek();
-}<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>PAL MENS WEAR — IMS</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<style>
-:root{
-  --bg:#f5f4f0;--surf:#fff;--surf2:#efede7;--border:#e0ddd4;
-  --text:#1c1a17;--muted:#78766e;
-  --blue:#1a4a8a;--blue-l:#e6f0fb;--blue-m:#2f6fd4;
-  --green:#0a6b3a;--green-l:#e2f5ec;--green-m:#18a05a;
-  --red:#8a1818;--red-l:#fbe8e8;--red-m:#d43a3a;
-  --amber:#7a4d0a;--amber-l:#fdf0d8;--amber-m:#e89008;
-  --purple:#3a2888;--purple-l:#eeeafc;--purple-m:#6a58d0;
-  --r:10px;--rl:14px;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
-input,select,button{font-family:'DM Sans',sans-serif}
-.page{display:none}.page.active{display:block}
-.tab{display:none}.tab.active{display:block}
-
-#pg-login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem;background:linear-gradient(135deg,#1a4a8a 0%,#2563eb 100%)}
-.login-box{background:#fff;border-radius:18px;padding:2.5rem;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
-.llogo{display:flex;align-items:center;gap:10px;margin-bottom:2rem}
-.llogo-ic{width:42px;height:42px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;letter-spacing:-.5px}
-.llogo-t{font-size:17px;font-weight:700;color:var(--text);line-height:1.2}
-.llogo-s{font-size:11px;color:var(--muted)}
-@keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
-.page-enter{animation:slideUp .5s ease forwards}
-.fl{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px}
-.fi{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:14px;outline:none;margin-bottom:12px}
-.fi:focus{border-color:var(--blue-m)}
-.btn-login{width:100%;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer}
-.btn-login:hover{opacity:.9}
-.lerr{background:var(--red-l);color:var(--red);border-radius:var(--r);padding:9px 12px;font-size:12px;margin-bottom:12px;display:none}
-
-.topnav{background:var(--surf);border-bottom:1px solid var(--border);padding:0 1.25rem;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:100}
-.tnlogo{display:flex;align-items:center;gap:8px}
-.tnlogo-ic{width:28px;height:28px;background:var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700}
-.tnlogo-t{font-size:14px;font-weight:700}
-.tnright{display:flex;align-items:center;gap:10px}
-.tnav{width:28px;height:28px;border-radius:50%;background:var(--blue-l);color:var(--blue);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
-.tnname{font-size:12px;font-weight:600}
-.tnrole{font-size:10px;color:var(--muted)}
-.btn-out{padding:5px 10px;border:1px solid var(--border);border-radius:var(--r);background:transparent;color:var(--muted);cursor:pointer;font-size:11px}
-
-.layout{display:flex;min-height:calc(100vh - 54px)}
-.sidebar{width:200px;background:var(--surf);border-right:1px solid var(--border);padding:.75rem 0;flex-shrink:0;position:sticky;top:54px;height:calc(100vh - 54px);overflow-y:auto}
-.sb-lbl{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.6px;padding:8px 12px 3px;text-transform:uppercase}
-.sb-item{display:flex;align-items:center;gap:8px;padding:7px 10px;margin:0 6px 1px;border-radius:8px;cursor:pointer;color:var(--muted);font-size:12px;font-weight:500;transition:all .15s}
-.sb-item:hover{background:var(--surf2);color:var(--text)}
-.sb-item.active{background:var(--blue-l);color:var(--blue);font-weight:600}
-.sb-ico{font-size:14px;width:18px;text-align:center}
-.main{flex:1;padding:1.25rem;overflow-x:hidden;min-width:0}
-
-.staff-wrap{max-width:580px;margin:2.5rem auto;padding:0 1rem}
-.staff-hd{text-align:center;margin-bottom:2rem}
-.staff-title{font-size:20px;font-weight:700;margin-bottom:5px}
-.staff-sub{font-size:13px;color:var(--muted);margin-bottom:10px}
-.staff-badge{display:inline-block;padding:5px 14px;background:var(--green-l);color:var(--green);border-radius:20px;font-size:11px;font-weight:600}
-.up-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem}
-.up-title{font-size:13px;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:7px}
-.up-sub{font-size:11px;color:var(--muted);margin-bottom:12px}
-.drop-zone{border:1.5px dashed var(--border);border-radius:var(--r);padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg)}
-.drop-zone:hover,.drop-zone.drag{border-color:var(--blue-m);background:var(--blue-l)}
-.drop-ico{font-size:26px;margin-bottom:6px}
-.drop-txt{font-size:12px;color:var(--muted);margin-bottom:8px}
-.btn-up{display:inline-block;padding:7px 16px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;border:none;color:#fff}
-.btn-blue{background:var(--blue)}.btn-green{background:var(--green)}
-.up-stat{margin-top:10px;padding:9px 12px;border-radius:var(--r);font-size:12px;display:none}
-.st-ok{background:var(--green-l);color:var(--green)}.st-err{background:var(--red-l);color:var(--red)}.st-loading{background:var(--blue-l);color:var(--blue)}
-.fi-hidden{display:none}
-
-.pg-title{font-size:18px;font-weight:700;margin-bottom:3px}
-.pg-sub{font-size:12px;color:var(--muted);margin-bottom:1.25rem}
-.mg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin-bottom:1.25rem}
-.mc{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
-.ml{font-size:10px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
-.mv{font-size:20px;font-weight:700;color:var(--text)}
-.ms{font-size:10px;margin-top:2px}
-.up{color:var(--green)}.dn{color:var(--red)}.pu{color:var(--purple-m)}
-
-.card{background:var(--surf);border:1px solid var(--border);border-radius:var(--rl);padding:1rem 1.25rem;margin-bottom:1rem}
-.ct{font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;text-transform:uppercase;letter-spacing:.3px}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
-@media(max-width:680px){.two{grid-template-columns:1fr}.sidebar{display:none}}
-
-.tw{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{font-size:10px;font-weight:700;color:var(--muted);text-align:left;padding:7px 9px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surf2);text-transform:uppercase;letter-spacing:.3px}
-td{padding:8px 9px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
-tr:last-child td{border-bottom:none}
-tbody tr:hover td{background:var(--bg)}
-
-.tag{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700}
-.tg{background:var(--green-l);color:var(--green)}.tr{background:var(--red-l);color:var(--red)}
-.ta{background:var(--amber-l);color:var(--amber)}.tb{background:var(--blue-l);color:var(--blue)}
-.tp{background:var(--purple-l);color:var(--purple)}.tgr{background:var(--surf2);color:var(--muted)}
-
-.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
-.bl{min-width:110px;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bt{flex:1;height:6px;background:var(--surf2);border-radius:3px;overflow:hidden}
-.bf{height:100%;border-radius:3px}
-.bv{min-width:35px;text-align:right;font-size:11px;font-weight:600;color:var(--text)}
-.rk{width:17px;height:17px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
-.r1{background:#faeeda;color:#7a4000}.r2{background:#e8e8e8;color:#444}.r3{background:#fde8e0;color:#7a2000}.rn{background:var(--surf2);color:var(--muted)}
-
-.ins{background:var(--surf2);border-radius:var(--r);padding:9px 11px;margin-bottom:7px;display:flex;gap:9px}
-.ins-i{font-size:15px;flex-shrink:0}
-.ins-t{font-size:11px;font-weight:700;color:var(--text);margin-bottom:2px}
-.ins-s{font-size:11px;color:var(--muted)}
-
-.frow{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
-.fs{padding:6px 9px;border:1px solid var(--border);border-radius:var(--r);background:var(--surf);color:var(--text);font-size:11px}
-.fsrch{padding:6px 9px;border:1px solid var(--border);border-radius:var(--r);background:var(--surf);color:var(--text);font-size:11px;flex:1;min-width:130px}
-.fs:focus,.fsrch:focus{outline:none;border-color:var(--blue-m)}
-
-.alert-r{display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--red-l);border-radius:var(--r);margin-bottom:7px;font-size:11px;color:var(--red);font-weight:600}
-.chw{position:relative;width:100%;height:190px}
-.empty{text-align:center;padding:2rem;color:var(--muted);font-size:12px}
-
-.ulog-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:11px;gap:8px;flex-wrap:wrap}
-.ulog-row:last-child{border-bottom:none}
-
-.u-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
-.u-row:last-child{border-bottom:none}
-.u-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
-.btn-sm{padding:5px 10px;border:1px solid var(--border);border-radius:var(--r);background:transparent;color:var(--muted);cursor:pointer;font-size:11px}
-.btn-danger{border-color:var(--red-m);color:var(--red)}.btn-danger:hover{background:var(--red-l)}
-
-.trend-up{color:var(--green-m);font-weight:700}
-.trend-dn{color:var(--red-m);font-weight:700}
-.trend-eq{color:var(--muted);font-weight:600}
-.sum-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
-.sum-box{background:var(--surf);border-radius:var(--r);padding:12px;border:1px solid var(--border)}
-.sum-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
-.sum-val{font-size:18px;font-weight:700;color:var(--text)}
-.sum-sub{font-size:11px;color:var(--muted);margin-top:2px}
-
-.group-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:10px}
-.group-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;cursor:pointer}
-.group-title{font-size:14px;font-weight:700;color:var(--text)}
-.group-stats{display:flex;gap:12px;font-size:11px;color:var(--muted);flex-wrap:wrap}
-.group-stat-val{font-weight:700;color:var(--text)}
-.group-body{display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
-.group-body.open{display:block}
-.chev{font-size:14px;color:var(--muted);transition:transform .2s}
-.chev.open{transform:rotate(90deg)}
-
-.btn-prim{padding:6px 14px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer}
-.btn-prim:hover{opacity:.9}
-.btn-excel{padding:6px 14px;background:var(--green);color:#fff;border:none;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer}
-.btn-excel:hover{opacity:.9}
-
-@media print{.sidebar,.topnav,.btn-out,.btn-login{display:none!important}.main{padding:0}.tab{display:block!important}}
-</style>
-</head>
-<body>
-<div id="app">
-
-<!-- LOGIN -->
-<div id="pg-login" class="page active">
-  <div class="login-box">
-    <div class="llogo">
-      <div class="llogo-ic">PMW</div>
-      <div>
-        <div class="llogo-t">PAL MENS WEAR</div>
-        <div class="llogo-s">Inventory Management System</div>
-      </div>
-    </div>
-    <div class="lerr" id="lerr"></div>
-    <label class="fl">Username</label>
-    <select class="fi" id="uname">
-      <option value="owner">Owner</option>
-      <option value="manager">Manager</option>
-      <option value="staff">Staff</option>
-    </select>
-    <label class="fl">Password</label>
-    <input class="fi" id="upass" type="password" placeholder="Enter password">
-    <button class="btn-login" onclick="doLogin()">Sign In</button>
-  </div>
-</div>
-
-<!-- STAFF PAGE -->
-<div id="pg-staff" class="page">
-  <div class="topnav">
-    <div class="tnlogo"><div class="tnlogo-ic">PMW</div><div class="tnlogo-t">PAL MENS WEAR</div></div>
-    <div class="tnright">
-      <div class="tnav" id="st-av">S</div>
-      <div><div class="tnname" id="st-name">Staff</div><div class="tnrole">Upload Only</div></div>
-      <button class="btn-out" onclick="doLogout()">Logout</button>
-    </div>
-  </div>
-  <div class="staff-wrap">
-    <div class="staff-hd">
-      <div class="staff-title">Upload Reports</div>
-      <div class="staff-sub">Upload your Excel files below. You cannot view any data.</div>
-      <div class="staff-badge">● Data saves permanently — never lost</div>
-    </div>
-    <div class="up-card">
-      <div class="up-title">📥 Purchase Report</div>
-      <div class="up-sub">Your daily purchase Excel</div>
-      <div class="drop-zone" id="dz-p" onclick="document.getElementById('fp').click()" ondragover="dzo(event,'p')" ondragleave="dzl('p')" ondrop="dzd(event,'p')">
-        <div class="drop-ico">📊</div>
-        <div class="drop-txt">Drag & drop Purchase Excel here or click to browse</div>
-        <span class="btn-up btn-blue">Choose File</span>
-      </div>
-      <div class="up-stat" id="sp"></div>
-      <input type="file" id="fp" class="fi-hidden" accept=".xlsx,.xls,.csv" onchange="doUpload(this,'purchase','sp')">
-    </div>
-    <div class="up-card">
-      <div class="up-title">📤 Sale Report</div>
-      <div class="up-sub">Your daily sale Excel — returns (negative qty) handled automatically</div>
-      <div class="drop-zone" id="dz-s" onclick="document.getElementById('fs').click()" ondragover="dzo(event,'s')" ondragleave="dzl('s')" ondrop="dzd(event,'s')">
-        <div class="drop-ico">🧾</div>
-        <div class="drop-txt">Drag & drop Sale Excel here or click to browse</div>
-        <span class="btn-up btn-green">Choose File</span>
-      </div>
-      <div class="up-stat" id="ss"></div>
-      <input type="file" id="fs" class="fi-hidden" accept=".xlsx,.xls,.csv" onchange="doUpload(this,'sale','ss')">
-    </div>
-    <div class="up-card">
-      <div class="up-title">📋 Purchase Challan</div>
-      <div class="up-sub">Your purchase challan / opening stock Excel</div>
-      <div class="drop-zone" id="dz-c" onclick="document.getElementById('fc').click()" ondragover="dzo(event,'c')" ondragleave="dzl('c')" ondrop="dzd(event,'c')">
-        <div class="drop-ico">📦</div>
-        <div class="drop-txt">Drag & drop Purchase Challan here or click to browse</div>
-        <span class="btn-up" style="background:var(--purple)">Choose File</span>
-      </div>
-      <div class="up-stat" id="sc"></div>
-      <input type="file" id="fc" class="fi-hidden" accept=".xlsx,.xls,.csv" onchange="doUpload(this,'challan','sc')">
-    </div>
-  </div>
-</div>
-
-<!-- DASHBOARD -->
-<div id="pg-dash" class="page">
-  <div class="topnav">
-    <div class="tnlogo"><div class="tnlogo-ic">PMW</div><div class="tnlogo-t">PAL MENS WEAR — IMS</div></div>
-    <div class="tnright">
-      <div class="tnav" id="dav">O</div>
-      <div><div class="tnname" id="dname">Owner</div><div class="tnrole" id="drole">Owner</div></div>
-      <button class="btn-out" onclick="doLogout()">Logout</button>
-    </div>
-  </div>
-  <div class="layout">
-    <div class="sidebar">
-      <div class="sb-lbl">Dashboard</div>
-      <div class="sb-item active" onclick="sw('overview',this)"><span class="sb-ico">📊</span>Overview</div>
-      <div class="sb-item" onclick="sw('inventory',this)"><span class="sb-ico">📦</span>Live Inventory</div>
-      <div class="sb-item" onclick="sw('reorder',this)"><span class="sb-ico">🛒</span>Reorder Sheet</div>
-      <div class="sb-item" onclick="sw('companyStock',this)"><span class="sb-ico">🏷️</span>Company-wise Stock</div>
-      <div class="sb-item" onclick="sw('supplierStock',this)"><span class="sb-ico">🏢</span>Supplier-wise Stock</div>
-      <div class="sb-item" onclick="sw('fastmov',this)"><span class="sb-ico">🔥</span>Fast Movers</div>
-      <div class="sb-item" onclick="sw('brands',this)"><span class="sb-ico">📈</span>Brand Analysis</div>
-      <div class="sb-lbl">Reports</div>
-      <div class="sb-item" onclick="sw('returns',this)"><span class="sb-ico">🔄</span>Returns</div>
-      <div class="sb-item" onclick="sw('dead',this)"><span class="sb-ico">⚠️</span>Dead Stock</div>
-      <div class="sb-item" onclick="sw('weekly',this)"><span class="sb-ico">📋</span>Weekly Report</div>
-      <div class="sb-item" onclick="sw('purchase',this)"><span class="sb-ico">📥</span>Purchase Reg.</div>
-      <div class="sb-item" onclick="sw('sale',this)"><span class="sb-ico">📤</span>Sale Reg.</div>
-      <div class="sb-lbl">Manage</div>
-      <div class="sb-item" id="sb-upload" onclick="sw('upload',this)"><span class="sb-ico">⬆️</span>Upload Files</div>
-      <div class="sb-item" id="sb-settings" onclick="sw('settings',this)"><span class="sb-ico">⚙️</span>Settings</div>
-    </div>
-    <div class="main">
-
-      <!-- OVERVIEW -->
-      <div id="tab-overview" class="tab active">
-        <div class="pg-title">Overview</div>
-        <div class="pg-sub" id="ov-sub">Loading...</div>
-        <div class="mg" id="ov-m"></div>
-        <div class="two">
-          <div class="card"><div class="ct">Top items sold</div><div id="item-bars"></div></div>
-          <div class="card"><div class="ct">Top brands sold</div><div id="brand-bars"></div></div>
-        </div>
-        <div class="two">
-          <div class="card"><div class="ct">Live insights</div><div id="insights"></div></div>
-          <div class="card"><div class="ct">Monthly purchase trend</div><div class="chw"><canvas id="trend-c"></canvas></div></div>
-        </div>
-        <div class="card"><div class="ct">Data health — sales vs purchases</div><div id="data-health"></div></div>
-      </div>
-
-      <!-- LIVE INVENTORY -->
-      <div id="tab-inventory" class="tab">
-        <div class="pg-title">Live Inventory</div>
-        <div class="pg-sub">Real stock = Purchased − Net Sold (returns added back automatically)</div>
-        <div class="mg" id="inv-m"></div>
-        <div class="card">
-          <div class="ct">All articles — current stock</div>
-          <div class="frow">
-            <select class="fs" id="inv-cat" onchange="renderInv()"><option value="">All items</option></select>
-            <select class="fs" id="inv-sup" onchange="renderInv()"><option value="">All suppliers</option></select>
-            <select class="fs" id="inv-brand" onchange="renderInv()"><option value="">All brands</option></select>
-            <select class="fs" id="inv-stk" onchange="renderInv()">
-              <option value="">All stock levels</option>
-              <option value="out">Out of stock (0)</option>
-              <option value="low">Low stock (1–5)</option>
-              <option value="ok">Normal (6+)</option>
-            </select>
-            <input class="fsrch" id="inv-srch" placeholder="Search item / lot no..." oninput="renderInv()">
-            <button class="btn-excel" onclick="exportInv()">📥 Excel</button>
-          </div>
-          <div class="tw"><table>
-            <thead><tr><th>Lot No.</th><th>Item</th><th>Brand</th><th>Supplier</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Returned</th><th>Live Stock</th><th>Avg Cost</th><th>Stock Value</th><th>Status</th></tr></thead>
-            <tbody id="inv-body"></tbody>
-          </table></div>
-        </div>
-      </div>
-
-      <!-- REORDER SHEET -->
-      <div id="tab-reorder" class="tab">
-        <div class="pg-title">🛒 Reorder Sheet</div>
-        <div class="pg-sub">Items that sold within last 30 days — you should buy these again. Fast movers (sold in &lt;10 days) get 2× reorder suggestion.</div>
-        <div class="frow">
-          <select class="fs" id="ro-days" onchange="renderReorder()">
-            <option value="30">Sold in last 30 days</option>
-            <option value="45">Sold in last 45 days</option>
-            <option value="60">Sold in last 60 days</option>
-            <option value="90">Sold in last 90 days</option>
-          </select>
-          <select class="fs" id="ro-brand" onchange="renderReorder()"><option value="">All brands</option></select>
-          <select class="fs" id="ro-sup" onchange="renderReorder()"><option value="">All suppliers</option></select>
-          <select class="fs" id="ro-speed" onchange="renderReorder()">
-            <option value="">All speeds</option>
-            <option value="super">🔥 Super fast (&lt;10 days) — 2× reorder</option>
-            <option value="fast">⚡ Fast (&lt;30 days) — 1× reorder</option>
-          </select>
-          <input class="fsrch" id="ro-srch" placeholder="Search item / lot no..." oninput="renderReorder()">
-          <button class="btn-excel" onclick="exportReorder()">📥 Excel</button>
-          <button class="btn-prim" onclick="window.print()">🖨️ Print</button>
-        </div>
-        <div class="mg" id="ro-m"></div>
-        <div class="card">
-          <div class="ct">Items to reorder</div>
-          <div class="tw"><table>
-            <thead><tr><th>Lot No.</th><th>Item</th><th>Brand</th><th>Supplier</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Sold in period</th><th>Days to sell</th><th>Live Stock</th><th>Speed</th><th style="background:var(--green-l);color:var(--green)">Reorder Qty</th></tr></thead>
-            <tbody id="ro-body"></tbody>
-          </table></div>
-        </div>
-      </div>
-
-      <!-- COMPANY-WISE STOCK -->
-      <div id="tab-companyStock" class="tab">
-        <div class="pg-title">🏷️ Company-wise Stock</div>
-        <div class="pg-sub">Stock grouped by Company Name (brand). Click any company to see its items.</div>
-        <div class="frow">
-          <input class="fsrch" id="cw-srch" placeholder="Search company name..." oninput="renderCompanyStock()">
-          <select class="fs" id="cw-sort" onchange="renderCompanyStock()">
-            <option value="stock">Sort by stock qty (high to low)</option>
-            <option value="value">Sort by stock value (high to low)</option>
-            <option value="sold">Sort by sales (high to low)</option>
-            <option value="name">Sort by name (A-Z)</option>
-          </select>
-          <button class="btn-excel" onclick="exportCompanyStock()">📥 Excel</button>
-        </div>
-        <div class="mg" id="cw-m"></div>
-        <div id="cw-list"></div>
-      </div>
-
-      <!-- SUPPLIER-WISE STOCK -->
-      <div id="tab-supplierStock" class="tab">
-        <div class="pg-title">🏢 Supplier-wise Stock</div>
-        <div class="pg-sub">Stock grouped by Party Name (supplier). Click any supplier to see items.</div>
-        <div class="frow">
-          <input class="fsrch" id="sw-srch" placeholder="Search supplier name..." oninput="renderSupplierStock()">
-          <select class="fs" id="sw-sort" onchange="renderSupplierStock()">
-            <option value="stock">Sort by stock qty (high to low)</option>
-            <option value="value">Sort by stock value (high to low)</option>
-            <option value="purchased">Sort by purchased (high to low)</option>
-            <option value="name">Sort by name (A-Z)</option>
-          </select>
-          <button class="btn-excel" onclick="exportSupplierStock()">📥 Excel</button>
-        </div>
-        <div class="mg" id="sw-m"></div>
-        <div id="sw-list"></div>
-      </div>
-
-      <!-- FAST MOVERS -->
-      <div id="tab-fastmov" class="tab">
-        <div class="pg-title">Fast Movers</div>
-        <div class="pg-sub">Items selling fastest — net of returns</div>
-        <div class="mg" id="fm-m"></div>
-        <div class="two">
-          <div class="card"><div class="ct">Top items by net qty sold</div><div id="fm-bars"></div></div>
-          <div class="card"><div class="ct">Top item types</div><div id="cat-bars2"></div></div>
-        </div>
-        <div class="card">
-          <div class="ct">Fast mover table</div>
-          <div class="frow">
-            <select class="fs" id="fm-cat" onchange="renderFM()"><option value="">All items</option></select>
-            <select class="fs" id="fm-br" onchange="renderFM()"><option value="">All brands</option></select>
-            <input class="fsrch" id="fm-srch" placeholder="Search item / lot no..." oninput="renderFM()">
-            <button class="btn-excel" onclick="exportFM()">📥 Excel</button>
-          </div>
-          <div class="tw"><table>
-            <thead><tr><th>#</th><th>Lot No.</th><th>Item</th><th>Brand</th><th>Size</th><th>Gross Sold</th><th>Returned</th><th>Net Sold</th><th>Speed</th></tr></thead>
-            <tbody id="fm-body"></tbody>
-          </table></div>
-        </div>
-      </div>
-
-      <!-- BRANDS -->
-      <div id="tab-brands" class="tab">
-        <div class="pg-title">Brand Analysis</div>
-        <div class="pg-sub">Sales performance by brand — net of returns</div>
-        <div class="mg" id="br-m"></div>
-        <div class="two">
-          <div class="card">
-            <div class="ct">Brand performance</div>
-            <div class="frow">
-              <select class="fs" id="br-cat" onchange="renderBr()"><option value="">All categories</option></select>
-              <button class="btn-excel" onclick="exportBrands()">📥 Excel</button>
-            </div>
-            <div class="tw"><table>
-              <thead><tr><th>#</th><th>Brand</th><th>Category</th><th>Gross Sold</th><th>Returned</th><th>Net Sold</th><th>Return Rate</th></tr></thead>
-              <tbody id="br-body"></tbody>
-            </table></div>
-          </div>
-          <div class="card"><div class="ct">Top brands by net sales</div><div id="br-bars"></div></div>
-        </div>
-      </div>
-
-      <!-- RETURNS -->
-      <div id="tab-returns" class="tab">
-        <div class="pg-title">Customer Returns</div>
-        <div class="pg-sub">Negative qty in sale file = return — automatically restocked</div>
-        <div class="mg" id="ret-m"></div>
-        <div id="ret-alerts"></div>
-        <div class="two">
-          <div class="card"><div class="ct">Returns by brand</div><div id="ret-br-bars"></div></div>
-          <div class="card"><div class="ct">Returns by item</div><div id="ret-item-bars"></div></div>
-        </div>
-        <div class="card">
-          <div class="ct" style="display:flex;justify-content:space-between;align-items:center">Returns register <button class="btn-excel" onclick="exportReturns()">📥 Excel</button></div>
-          <div class="tw"><table>
-            <thead><tr><th>Date</th><th>Lot No.</th><th>Brand</th><th>Item</th><th>Category</th><th>Size</th><th>Qty Returned</th><th>Status</th></tr></thead>
-            <tbody id="ret-body"></tbody>
-          </table></div>
-        </div>
-      </div>
-
-      <!-- DEAD STOCK -->
-      <div id="tab-dead" class="tab">
-        <div class="pg-title">Dead Stock</div>
-        <div class="pg-sub">Items with no sale for 90+ days</div>
-        <div class="mg" id="ds-m"></div>
-        <div id="ds-alerts"></div>
-        <div class="two">
-          <div class="card"><div class="ct">Dead stock by supplier</div><div id="ds-sup-bars"></div></div>
-          <div class="card"><div class="ct">Dead stock by item</div><div id="ds-item-bars"></div></div>
-        </div>
-        <div class="card">
-          <div class="ct" style="display:flex;justify-content:space-between;align-items:center">Dead stock register <button class="btn-excel" onclick="exportDead()">📥 Excel</button></div>
-          <div class="tw"><table>
-            <thead><tr><th>Lot No.</th><th>Item</th><th>Supplier</th><th>Size</th><th>Live Stock</th><th>Avg Cost ₹</th><th>Value Blocked ₹</th><th>Last Sale</th><th>Days Unsold</th><th>Action</th></tr></thead>
-            <tbody id="ds-body"></tbody>
-          </table></div>
-        </div>
-      </div>
-
-      <!-- WEEKLY -->
-      <div id="tab-weekly" class="tab">
-        <div class="pg-title">Weekly Report</div>
-        <div class="pg-sub" id="wk-sub">Auto-generated every week</div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap">
-          <label style="font-size:12px;font-weight:600;color:var(--muted)">Select week ending:</label>
-          <input type="date" id="wk-date" class="fs" onchange="buildWeekly()">
-          <button class="btn-prim" onclick="setThisWeek()">This Week</button>
-          <button onclick="window.print()" style="padding:6px 14px;border:1px solid var(--border);border-radius:var(--r);font-size:12px;cursor:pointer;background:var(--surf)">🖨️ Print</button>
-        </div>
-        <div class="mg" id="wk-m"></div>
-        <div class="card"><div class="ct" style="color:var(--red-m)">🚨 Restock Urgently</div><div id="wk-urgent"></div><div class="tw" style="margin-top:10px"><table><thead><tr><th>Lot No.</th><th>Item</th><th>Supplier</th><th>Size</th><th>Sold This Week</th><th>Live Stock</th><th>Days Cover</th><th>Action</th></tr></thead><tbody id="wk-urgent-tbl"></tbody></table></div></div>
-        <div class="card"><div class="ct" style="color:var(--green-m)">🔥 Fast Movers This Week</div><div class="tw"><table><thead><tr><th>#</th><th>Lot No.</th><th>Item</th><th>Brand</th><th>Size</th><th>This Week</th><th>Last Week</th><th>Change</th></tr></thead><tbody id="wk-fast-tbl"></tbody></table></div></div>
-        <div class="card"><div class="ct" style="color:var(--red-m)">💀 Dead Stock</div><div id="wk-dead-summary" style="margin-bottom:10px"></div><div class="tw"><table><thead><tr><th>Lot No.</th><th>Item</th><th>Supplier</th><th>Size</th><th>Live Stock</th><th>Value ₹</th><th>Days Unsold</th><th>Action</th></tr></thead><tbody id="wk-dead-tbl"></tbody></table></div></div>
-        <div class="card" style="background:var(--blue-l);border-color:var(--blue-m)"><div class="ct" style="color:var(--blue)">📊 Week Summary</div><div id="wk-summary"></div></div>
-      </div>
-
-      <!-- PURCHASE REG -->
-      <div id="tab-purchase" class="tab">
-        <div class="pg-title">Purchase Register</div>
-        <div class="pg-sub">All purchase entries</div>
-        <div class="frow">
-          <select class="fs" id="pur-sup" onchange="renderPur()"><option value="">All suppliers</option></select>
-          <select class="fs" id="pur-item" onchange="renderPur()"><option value="">All items</option></select>
-          <input class="fsrch" id="pur-srch" placeholder="Search..." oninput="renderPur()">
-          <button class="btn-excel" onclick="exportPurchase()">📥 Excel</button>
-        </div>
-        <div class="card" style="padding:0"><div class="tw"><table><thead><tr><th>Date</th><th>Supplier</th><th>Item</th><th>Size</th><th>Lot No.</th><th>Qty</th><th>Rate ₹</th><th>Amount ₹</th></tr></thead><tbody id="pur-body"></tbody></table></div></div>
-      </div>
-
-      <!-- SALE REG -->
-      <div id="tab-sale" class="tab">
-        <div class="pg-title">Sale Register</div>
-        <div class="pg-sub">All sale entries</div>
-        <div class="frow">
-          <select class="fs" id="sal-br" onchange="renderSal()"><option value="">All brands</option></select>
-          <select class="fs" id="sal-cat" onchange="renderSal()"><option value="">All categories</option></select>
-          <input class="fsrch" id="sal-srch" placeholder="Search..." oninput="renderSal()">
-          <button class="btn-excel" onclick="exportSale()">📥 Excel</button>
-        </div>
-        <div class="card" style="padding:0"><div class="tw"><table><thead><tr><th>Date</th><th>Brand</th><th>Category</th><th>Item</th><th>Size</th><th>Lot No.</th><th>Qty</th><th>Type</th></tr></thead><tbody id="sal-body"></tbody></table></div></div>
-      </div>
-
-      <!-- UPLOAD -->
-      <div id="tab-upload" class="tab">
-        <div class="pg-title">Upload Files</div>
-        <div class="pg-sub">Upload your Excel files</div>
-        <div class="up-card">
-          <div class="up-title">📥 Purchase Report</div>
-          <div class="up-sub">Daily purchase Excel</div>
-          <div class="drop-zone" onclick="document.getElementById('ofp').click()">
-            <div class="drop-ico">📊</div><div class="drop-txt">Click to upload Purchase Excel</div>
-            <span class="btn-up btn-blue">Choose File</span>
-          </div>
-          <div class="up-stat" id="osp"></div>
-          <input type="file" id="ofp" class="fi-hidden" accept=".xlsx,.xls,.csv" onchange="doUpload(this,'purchase','osp')">
-        </div>
-        <div class="up-card">
-          <div class="up-title">📤 Sale Report</div>
-          <div class="up-sub">Daily sale Excel</div>
-          <div class="drop-zone" onclick="document.getElementById('ofs').click()">
-            <div class="drop-ico">🧾</div><div class="drop-txt">Click to upload Sale Excel</div>
-            <span class="btn-up btn-green">Choose File</span>
-          </div>
-          <div class="up-stat" id="oss"></div>
-          <input type="file" id="ofs" class="fi-hidden" accept=".xlsx,.xls,.csv" onchange="doUpload(this,'sale','oss')">
-        </div>
-        <div class="up-card">
-          <div class="up-title">📋 Purchase Challan</div>
-          <div class="up-sub">Purchase challan / opening stock Excel</div>
-          <div class="drop-zone" onclick="document.getElementById('ofc').click()">
-            <div class="drop-ico">📦</div><div class="drop-txt">Click to upload Purchase Challan</div>
-            <span class="btn-up" style="background:var(--purple)">Choose File</span>
-          </div>
-          <div class="up-stat" id="osc"></div>
-          <input type="file" id="ofc" class="fi-hidden" accept=".xlsx,.xls,.csv" onchange="doUpload(this,'challan','osc')">
-        </div>
-        <div class="card"><div class="ct">Upload history</div><div id="ulog"></div></div>
-      </div>
-
-      <!-- SETTINGS -->
-      <div id="tab-settings" class="tab">
-        <div class="pg-title">Settings</div>
-        <div class="pg-sub">User roles and data management</div>
-        <div class="card">
-          <div class="ct">User accounts</div>
-          <div class="u-row"><div style="display:flex;align-items:center;gap:10px"><div class="u-av" style="background:var(--blue-l);color:var(--blue)">O</div><div><div style="font-size:13px;font-weight:600">Owner</div><div style="font-size:11px;color:var(--muted)">All reports · Upload · Settings</div></div></div><span class="tag tb">Owner</span></div>
-          <div class="u-row"><div style="display:flex;align-items:center;gap:10px"><div class="u-av" style="background:var(--green-l);color:var(--green)">M</div><div><div style="font-size:13px;font-weight:600">Manager</div><div style="font-size:11px;color:var(--muted)">View reports only</div></div></div><span class="tag tg">Manager</span></div>
-          <div class="u-row"><div style="display:flex;align-items:center;gap:10px"><div class="u-av" style="background:var(--amber-l);color:var(--amber)">S</div><div><div style="font-size:13px;font-weight:600">Staff</div><div style="font-size:11px;color:var(--muted)">Upload only</div></div></div><span class="tag ta">Staff</span></div>
-        </div>
-        <div class="card">
-          <div class="ct">Data management</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-            <button class="btn-sm btn-danger" onclick="clearData('purchase')">Clear Purchase Data</button>
-            <button class="btn-sm btn-danger" onclick="clearData('sale')">Clear Sale Data</button>
-            <button class="btn-sm btn-danger" onclick="clearData('returns')">Clear Returns Data</button>
-          </div>
-          <div style="font-size:11px;color:var(--muted)">Warning: Permanent delete.</div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-</div>
-
-<script>
-let G = { purchase:[], sale:[], returns:[] };
-let charts = {};
-let currentRole = '';
-// Store last filtered data for Excel export
-let lastInvData = [];
-let lastReorderData = [];
-let lastFMData = [];
-let lastBrData = [];
-let lastPurData = [];
-let lastSalData = [];
-
-// ═══════ NORMALIZE HELPER — trims and normalizes strings for comparison ═══════
-function norm(s) { return (s||'').trim().replace(/\s+/g,' '); }
-
-async function doLogin() {
-  const u = document.getElementById('uname').value.trim();
-  const p = document.getElementById('upass').value;
-  const err = document.getElementById('lerr');
-  err.style.display = 'none';
-  try {
-    const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username:u,password:p}) });
-    const d = await r.json();
-    if (!d.success) { err.textContent = d.error; err.style.display = 'block'; return; }
-    currentRole = d.role;
-    if (d.role === 'staff') showStaff(d); else showDash(d);
-  } catch { err.textContent = 'Connection error. Try again.'; err.style.display = 'block'; }
-}
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('upass').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
-});
-async function doLogout() { await fetch('/api/logout',{method:'POST'}); location.reload(); }
-function showStaff(d) { document.getElementById('st-av').textContent = d.name[0].toUpperCase(); document.getElementById('st-name').textContent = d.name; showPage('pg-staff'); }
-function showDash(d) {
-  document.getElementById('dav').textContent = d.name[0].toUpperCase();
-  document.getElementById('dname').textContent = d.name;
-  document.getElementById('drole').textContent = d.role.charAt(0).toUpperCase()+d.role.slice(1);
-  if (d.role === 'manager') { document.getElementById('sb-upload').style.display = 'none'; document.getElementById('sb-settings').style.display = 'none'; }
-  showPage('pg-dash');
-  loadData();
-}
-function showPage(id) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  const target = document.getElementById(id);
-  target.classList.add('active');
-  if (id !== 'pg-login') { target.classList.add('page-enter'); }
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-(async()=>{ try { await fetch('/api/logout',{method:'POST'}); } catch {} })();
-
-function dzo(e,t){e.preventDefault();document.getElementById('dz-'+t).classList.add('drag');}
-function dzl(t){document.getElementById('dz-'+t)?.classList.remove('drag');}
-function dzd(e,t){ e.preventDefault();dzl(t); const f=e.dataTransfer.files[0]; if(!f)return; const map={p:'purchase',s:'sale',c:'challan'}; const inp=document.getElementById('f'+t); inp._f=f; doUpload(inp,map[t],'s'+t); }
-
-async function doUpload(input, type, statId) {
-  const file = input._f || input.files[0];
-  if (!file) return;
-  const st = document.getElementById(statId);
-  st.className='up-stat st-loading'; st.textContent='Uploading and reading file...'; st.style.display='block';
-  const fd = new FormData();
-  fd.append('file', file, file.name);
-  try {
-    const r = await fetch('/api/upload/'+type, {method:'POST',body:fd});
-    const d = await r.json();
-    if (d.success) {
-      let msg = '✓ File uploaded — ';
-      if (type==='purchase') msg += d.purchaseRows+' purchase voucher rows saved';
-      else if (type==='challan') msg += d.purchaseRows+' challan rows saved';
-      else msg += d.saleRows+' sale rows'+(d.convertedRows?' + '+d.convertedRows+' auto-converted rows':'')+' saved';
-      st.className='up-stat st-ok'; st.textContent=msg;
-      if (currentRole!=='staff') { loadData(); loadUlog(); }
-    } else {
-      st.className='up-stat st-err'; st.textContent='✗ Error: '+(d.error||'Upload failed');
-    }
-  } catch { st.className='up-stat st-err'; st.textContent='✗ Connection error. Try again.'; }
-  st.style.display='block';
-  input.value=''; input._f=null;
-}
-
-async function loadData() { try { const r = await fetch('/api/data'); G = await r.json(); buildAll(); } catch(e) { console.error(e); } }
-
-async function loadUlog() {
-  try {
-    const r = await fetch('/api/uploads');
-    const logs = await r.json();
-    const el = document.getElementById('ulog');
-    if (!el) return;
-    if (!logs.length) { el.innerHTML='<div class="empty">No uploads yet</div>'; return; }
-    el.innerHTML = logs.slice(0,30).map(u=>`
-      <div class="ulog-row">
-        <span style="font-weight:600">${u.filename}</span>
-        <span class="tag ${u.type==='purchase'?'tb':u.type==='challan'?'tp':'tg'}">${u.type}</span>
-        <span>${u.type==='purchase'?u.purchaseRows+' rows':u.type==='challan'?u.purchaseRows+' challan rows':u.saleRows+' sales'+(u.convertedRows?', '+u.convertedRows+' converted':'')}</span>
-        <span style="color:var(--muted)">by ${u.by}</span>
-        <span style="color:var(--muted)">${new Date(u.at).toLocaleString('en-IN')}</span>
-      </div>`).join('');
-  } catch {}
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   FIX: getArtStats() — KEY = lotNo|item|size (3 parts, NO supplier/brand)
-   SUPPLIER = ONLY from purchase rows (r.supplier from PARTY NAME)
-   BRAND = from purchase rows (r.brand) OR sale rows (r.brand from COMPANY NAME)
-   All values normalized with norm() to prevent whitespace/encoding mismatches
-   ═══════════════════════════════════════════════════════════════════════════ */
-function getArtStats() {
-  const m = {};
-  G.purchase.forEach(r => {
-    const k = norm(r.lotNo)+'|'+norm(r.item)+'|'+norm(r.size);
-    if (!m[k]) m[k] = { lotNo:norm(r.lotNo), item:norm(r.item), supplier:norm(r.supplier), brand:norm(r.brand), group:norm(r.group||r.category), size:norm(r.size),
-      purchased:0, purchaseCost:0, grossSold:0, returned:0, saleDates:[], purchaseDates:[] };
-    m[k].purchased += r.qty;
-    m[k].purchaseCost += r.qty * (r.rate||0);
-    if (r.date) m[k].purchaseDates.push(new Date(r.date));
-    if (!m[k].supplier && norm(r.supplier)) m[k].supplier = norm(r.supplier);
-    if (!m[k].brand && norm(r.brand)) m[k].brand = norm(r.brand);
-    if (!m[k].group && norm(r.group||r.category)) m[k].group = norm(r.group||r.category);
-  });
-  G.sale.forEach(r => {
-    const k = norm(r.lotNo)+'|'+norm(r.item)+'|'+norm(r.size);
-    if (!m[k]) m[k] = { lotNo:norm(r.lotNo), item:norm(r.item), supplier:'', brand:norm(r.brand), group:norm(r.group||r.category), size:norm(r.size),
-      purchased:0, purchaseCost:0, grossSold:0, returned:0, saleDates:[], purchaseDates:[] };
-    m[k].grossSold += r.qty;
-    if (r.date) m[k].saleDates.push({date:new Date(r.date), qty:r.qty});
-    if (!m[k].brand && norm(r.brand)) m[k].brand = norm(r.brand);
-    if (!m[k].group && norm(r.group||r.category)) m[k].group = norm(r.group||r.category);
-  });
-  G.returns.forEach(r => {
-    const k = norm(r.lotNo)+'|'+norm(r.item)+'|'+norm(r.size);
-    if (!m[k]) m[k] = { lotNo:norm(r.lotNo), item:norm(r.item), supplier:'', brand:norm(r.brand), group:norm(r.group||r.category), size:norm(r.size),
-      purchased:0, purchaseCost:0, grossSold:0, returned:0, saleDates:[], purchaseDates:[] };
-    m[k].returned += r.qty;
-  });
-  return Object.values(m).map(a => {
-    a.netSold     = Math.max(0, a.grossSold - a.returned);
-    const rawDiff = a.purchased - a.netSold;
-    a.liveStock   = Math.max(0, rawDiff);
-    a.oversold    = rawDiff < 0 ? -rawDiff : 0;
-    a.lastSale    = a.saleDates.length ? new Date(Math.max(...a.saleDates.map(s=>s.date))) : null;
-    a.firstPurchase = a.purchaseDates.length ? new Date(Math.min(...a.purchaseDates)) : null;
-    a.daysSince   = a.lastSale ? Math.max(0,Math.round((new Date()-a.lastSale)/86400000)) : 9999;
-    a.avgCost     = a.purchased > 0 ? a.purchaseCost / a.purchased : 0;
-    a.stockVal    = a.liveStock * a.avgCost;
-    if (a.firstPurchase && a.saleDates.length) {
-      const sorted = a.saleDates.slice().sort((x,y)=>x.date-y.date);
-      let cumSold = 0, daysToSell = null;
-      for (const s of sorted) {
-        cumSold += s.qty;
-        if (cumSold >= a.purchased) {
-          daysToSell = Math.max(1, Math.round((s.date - a.firstPurchase)/86400000));
-          break;
-        }
-      }
-      a.daysToSell = daysToSell;
-    } else {
-      a.daysToSell = null;
-    }
-    return a;
-  });
-}
-
-function getBrandStats() {
-  const m = {};
-  G.sale.forEach(r => {
-    const k = norm(r.brand||'Unknown')+'|'+norm(r.category||'General');
-    if (!m[k]) m[k]={brand:norm(r.brand||'Unknown'),category:norm(r.category||'General'),grossSold:0,returned:0};
-    m[k].grossSold += r.qty;
-  });
-  G.returns.forEach(r => {
-    const k = norm(r.brand||'Unknown')+'|'+norm(r.category||'General');
-    if (!m[k]) m[k]={brand:norm(r.brand||'Unknown'),category:norm(r.category||'General'),grossSold:0,returned:0};
-    m[k].returned += r.qty;
-  });
-  return Object.values(m).map(b=>{ b.netSold=Math.max(0,b.grossSold-b.returned); b.retRate=b.grossSold>0?Math.round(b.returned/b.grossSold*100):0; return b; }).sort((a,b)=>b.netSold-a.netSold);
-}
-
-function getMonthly() {
-  const m = {};
-  G.purchase.forEach(r => { if (!r.date) return; const k = r.date.substring(0,7); if (!m[k]) m[k]={label:new Date(r.date+'T00:00:00').toLocaleString('en-IN',{month:'short',year:'2-digit'}),purchase:0,sale:0}; m[k].purchase += r.qty; });
-  G.sale.forEach(r => { if (!r.date) return; const k = r.date.substring(0,7); if (!m[k]) m[k]={label:new Date(r.date+'T00:00:00').toLocaleString('en-IN',{month:'short',year:'2-digit'}),purchase:0,sale:0}; m[k].sale += r.qty; });
-  return Object.entries(m).sort((a,b)=>a[0]>b[0]?1:-1).map(([_,v])=>v);
-}
-
-const CLRS = ['#2f6fd4','#18a05a','#d85a30','#6a58d0','#e89008','#d4537e','#0a6b3a','#1a4a8a'];
-function speedTag(d) { if(d<7) return '<span class="tag tg">Super Fast</span>'; if(d<30) return '<span class="tag tb">Fast</span>'; if(d<90) return '<span class="tag ta">Slow</span>'; return '<span class="tag tr">Dead Stock</span>'; }
-function speedText(d) { if(d<7) return 'Super Fast'; if(d<30) return 'Fast'; if(d<90) return 'Slow'; return 'Dead Stock'; }
-function avgDayTag(a) { const d = a.netSold>0&&a.saleDates?.length>1?(Math.max(...a.saleDates.map(s=>s.date))-Math.min(...a.saleDates.map(s=>s.date)))/86400000/a.netSold:30; return speedTag(d); }
-function avgDayText(a) { const d = a.netSold>0&&a.saleDates?.length>1?(Math.max(...a.saleDates.map(s=>s.date))-Math.min(...a.saleDates.map(s=>s.date)))/86400000/a.netSold:30; return speedText(d); }
-function mkBars(elId,data,lk,vk,colors){ const max=Math.max(...data.map(d=>d[vk]),1); document.getElementById(elId).innerHTML=data.slice(0,8).map((d,i)=>`<div class="bar-row"><div class="rk ${i<3?'r'+(i+1):'rn'}">${i+1}</div><div class="bl" title="${d[lk]}">${d[lk]}</div><div class="bt"><div class="bf" style="width:${Math.round(d[vk]/max*100)}%;background:${colors?colors[i%colors.length]:CLRS[i%8]}"></div></div><div class="bv">${d[vk]}</div></div>`).join('')||'<div class="empty">No data</div>'; }
-function mkChart(id,cfg){if(charts[id])charts[id].destroy();const el=document.getElementById(id);if(el)charts[id]=new Chart(el,cfg);}
-function setMG(id,items){document.getElementById(id).innerHTML=items.map(m=>`<div class="mc"><div class="ml">${m.l}</div><div class="mv">${m.v}</div>${m.s?`<div class="ms ${m.c||''}">${m.s}</div>`:''}</div>`).join('');}
-function noData(cols){return `<tr><td colspan="${cols}" class="empty">No data yet — upload your Excel files</td></tr>`;}
-
-/* ═══════ EXCEL EXPORT HELPER ═══════ */
-function downloadExcel(data, headers, filename) {
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
-  // Auto column widths
-  ws['!cols'] = headers.map((h,i) => {
-    let max = h.length;
-    data.forEach(row => { if (row[i] != null && String(row[i]).length > max) max = String(row[i]).length; });
-    return { wch: Math.min(max + 2, 40) };
-  });
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Report');
-  XLSX.writeFile(wb, filename + '.xlsx');
-}
-
-function buildAll() {
-  populateFilters();
-  buildOverview();
-  buildInventory();
-  buildReorder();
-  buildCompanyStock();
-  buildSupplierStock();
-  buildFastMovers();
-  buildBrands();
-  buildReturns();
-  buildDead();
-  buildPurReg();
-  buildSalReg();
-  if(document.getElementById('tab-weekly')?.classList.contains('active')) buildWeekly();
-  if(currentRole==='owner') loadUlog();
-}
-
-function buildOverview() {
-  const arts=getArtStats(), brs=getBrandStats(), monthly=getMonthly();
-  const totPurchQty = G.purchase.reduce((s,r)=>s+r.qty,0);
-  const totSaleQty  = G.sale.reduce((s,r)=>s+r.qty,0);
-  const totRetQty   = G.returns.reduce((s,r)=>s+r.qty,0);
-  const totStockClamped = arts.reduce((s,a)=>s+a.liveStock,0);
-  const totOversold     = arts.reduce((s,a)=>s+(a.oversold||0),0);
-  const totStockTrue    = totStockClamped - totOversold;
-  const totStockVal = arts.reduce((s,a)=>s+a.stockVal,0);
-  const dead        = arts.filter(a=>a.daysSince>=90&&a.liveStock>0).length;
-  const mismatchArts = arts.filter(a=>a.oversold>0).length;
-
-  document.getElementById('ov-sub').innerHTML = `<span style="color:var(--green);font-weight:600">● Data saved permanently</span> &nbsp;·&nbsp; ${G.purchase.length} purchase rows &nbsp;·&nbsp; ${G.sale.length} sale rows &nbsp;·&nbsp; ${G.returns.length} returns`;
-  const liveStockSub = totOversold > 0 ? `⚠ ${totOversold.toLocaleString()} phantom units hidden` : '';
-
-  setMG('ov-m',[
-    {l:'Total purchased (qty)', v:totPurchQty.toLocaleString()},
-    {l:'Total sold (net qty)',  v:(totSaleQty-totRetQty).toLocaleString()},
-    {l:'Total returns',        v:totRetQty, s:'restocked automatically', c:'pu'},
-    {l:'Live stock (units)',   v:totStockTrue.toLocaleString(), s:liveStockSub, c:totOversold>0?'dn':''},
-    {l:'Stock value',          v:'₹'+Math.round(totStockVal).toLocaleString('en-IN')},
-    {l:'Dead stock items',     v:dead, s:'90+ days unsold', c:'dn'},
-  ]);
-
-  const healthEl = document.getElementById('data-health');
-  if (healthEl) {
-    if (mismatchArts === 0) {
-      healthEl.innerHTML = '<div style="font-size:12px;color:var(--green-m);font-weight:600">✓ All sales match purchase records — data is clean.</div>';
-    } else {
-      const bad = arts.filter(a=>a.oversold>0).sort((a,b)=>b.oversold-a.oversold).slice(0,20);
-      healthEl.innerHTML = `
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-          <div style="padding:8px 14px;background:var(--red-l);border-radius:var(--r);font-size:12px;color:var(--red-m);font-weight:700">${mismatchArts} articles sold more than purchased</div>
-          <div style="padding:8px 14px;background:var(--red-l);border-radius:var(--r);font-size:12px;color:var(--red-m);font-weight:700">${totOversold.toLocaleString()} phantom units</div>
-          <div style="padding:8px 14px;background:var(--amber-l);border-radius:var(--r);font-size:12px;color:var(--amber);font-weight:600">Likely: opening stock not entered, mismatched lot/item/size, missing bills</div>
-        </div>
-        <div class="tw"><table><thead><tr><th>Lot no</th><th>Item</th><th>Size</th><th>Purchased</th><th>Net sold</th><th>Phantom</th><th>Brand/Supplier</th></tr></thead>
-          <tbody>${bad.map(a=>`<tr><td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td><td style="font-weight:700">${a.item||'—'}</td><td>${a.size||'—'}</td><td>${a.purchased}</td><td>${a.netSold}</td><td style="font-weight:700;color:var(--red-m)">+${a.oversold}</td><td>${a.brand||a.supplier||'—'}</td></tr>`).join('')}</tbody>
-        </table></div>
-        ${mismatchArts>20?`<div style="font-size:11px;color:var(--muted);margin-top:8px">Showing worst 20 of ${mismatchArts}.</div>`:''}
-      `;
-    }
-  }
-
-  const itemSold={};
-  G.sale.forEach(r=>{const k=norm(r.item)||'Unknown';if(!itemSold[k])itemSold[k]={item:k,qty:0};itemSold[k].qty+=r.qty;});
-  G.returns.forEach(r=>{const k=norm(r.item)||'Unknown';if(itemSold[k])itemSold[k].qty-=r.qty;});
-  mkBars('item-bars',Object.values(itemSold).sort((a,b)=>b.qty-a.qty),'item','qty');
-  mkBars('brand-bars',brs.slice(0,8),'brand','netSold');
-
-  const ins=[];
-  const topItem=Object.values(itemSold).sort((a,b)=>b.qty-a.qty)[0];
-  if(topItem) ins.push({i:'🔥',t:`${topItem.item} is your fastest selling item`,s:`${topItem.qty} net units sold`});
-  if(mismatchArts) ins.push({i:'🧾',t:`${mismatchArts} articles sold without matching purchases`,s:`${totOversold.toLocaleString()} phantom units — check Data Health below`});
-  if(dead) ins.push({i:'⚠️',t:`${dead} articles unsold for 90+ days`,s:`₹${Math.round(arts.filter(a=>a.daysSince>=90&&a.liveStock>0).reduce((s,a)=>s+a.stockVal,0)).toLocaleString('en-IN')} capital blocked`});
-  if(totRetQty) ins.push({i:'🔄',t:`${totRetQty} units returned by customers`,s:'All restocked automatically'});
-  const topBr=brs[0];
-  if(topBr) ins.push({i:'💡',t:`${topBr.brand} is your top selling brand`,s:`${topBr.netSold} net units sold`});
-  document.getElementById('insights').innerHTML=ins.map(i=>`<div class="ins"><div class="ins-i">${i.i}</div><div><div class="ins-t">${i.t}</div><div class="ins-s">${i.s}</div></div></div>`).join('')||'<div class="empty">Upload files to see insights</div>';
-
-  if(monthly.length) mkChart('trend-c',{type:'line',data:{labels:monthly.map(m=>m.label),datasets:[{label:'Purchase qty',data:monthly.map(m=>m.purchase),borderColor:'#2f6fd4',tension:.4,fill:false,pointRadius:3},{label:'Sale qty',data:monthly.map(m=>m.sale),borderColor:'#18a05a',tension:.4,fill:false,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:11}}}},scales:{y:{ticks:{stepSize:1}}}}});
-}
-
-function buildInventory() {
-  const arts=getArtStats();
-  const clamped = arts.reduce((s,a)=>s+a.liveStock,0);
-  const oversold = arts.reduce((s,a)=>s+(a.oversold||0),0);
-  const trueStock = clamped - oversold;
-  setMG('inv-m',[
-    {l:'Total live stock',     v:trueStock.toLocaleString()+' units', s:oversold>0?`⚠ ${oversold.toLocaleString()} phantom units`:'', c:oversold>0?'dn':''},
-    {l:'Stock value',          v:'₹'+Math.round(arts.reduce((s,a)=>s+a.stockVal,0)).toLocaleString('en-IN')},
-    {l:'Out of stock',         v:arts.filter(a=>a.liveStock===0).length, c:'dn'},
-    {l:'Low stock (≤5)',       v:arts.filter(a=>a.liveStock>0&&a.liveStock<=5).length, c:'dn'},
-    {l:'Units from returns',   v:G.returns.reduce((s,r)=>s+r.qty,0), s:'re-added to stock', c:'pu'},
-  ]);
-  renderInv();
-}
-
-function renderInv() {
-  const arts=getArtStats().sort((a,b)=>b.liveStock-a.liveStock);
-  const catF=document.getElementById('inv-cat').value;
-  const supF=document.getElementById('inv-sup').value;
-  const brF=document.getElementById('inv-brand').value;
-  const stkF=document.getElementById('inv-stk').value;
-  const srch=document.getElementById('inv-srch').value.toLowerCase();
-  const f=arts.filter(a=>{
-    if(catF && a.item!==catF) return false;
-    if(supF && a.supplier!==supF) return false;
-    if(brF && a.brand!==brF) return false;
-    if(stkF==='out'&&a.liveStock!==0) return false;
-    if(stkF==='low'&&(a.liveStock<1||a.liveStock>5)) return false;
-    if(stkF==='ok'&&a.liveStock<6) return false;
-    if(srch&&!(a.lotNo||'').toLowerCase().includes(srch)&&!(a.item||'').toLowerCase().includes(srch)) return false;
-    return true;
-  });
-  lastInvData = f;
-  document.getElementById('inv-body').innerHTML=f.slice(0,300).map(a=>`<tr>
-    <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
-    <td style="font-weight:600">${a.item||'—'}</td>
-    <td>${a.brand||'—'}</td>
-    <td>${a.supplier||'—'}</td>
-    <td>${a.size||'—'}</td>
-    <td>${a.purchased}</td><td>${a.grossSold}</td>
-    <td style="${a.returned>0?'color:var(--purple-m);font-weight:600':''}">${a.returned}</td>
-    <td style="font-weight:700;color:${a.liveStock===0?'var(--red-m)':a.liveStock<=5?'var(--amber-m)':'var(--green-m)'}">${a.liveStock}</td>
-    <td>₹${Math.round(a.avgCost)}</td>
-    <td>₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td>
-    <td><span class="tag ${a.liveStock===0?'tr':a.liveStock<=5?'ta':'tg'}">${a.liveStock===0?'Out':a.liveStock<=5?'Low':'In stock'}</span></td>
-  </tr>`).join('')||noData(12);
-}
-
-function exportInv() {
-  const d = lastInvData.map(a=>[a.lotNo,a.item,a.brand,a.supplier,a.size,a.purchased,a.grossSold,a.returned,a.liveStock,Math.round(a.avgCost),Math.round(a.stockVal),a.liveStock===0?'Out':a.liveStock<=5?'Low':'In stock']);
-  downloadExcel(d,['Lot No','Item','Brand','Supplier','Size','Purchased','Sold','Returned','Live Stock','Avg Cost','Stock Value','Status'],'PAL_Inventory_'+new Date().toISOString().split('T')[0]);
-}
-
-// ═══════ REORDER SHEET ═══════
-function buildReorder() { renderReorder(); }
-
-function renderReorder() {
-  const days = parseInt(document.getElementById('ro-days').value) || 30;
-  const brF = document.getElementById('ro-brand').value;
-  const supF = document.getElementById('ro-sup').value;
-  const speedF = document.getElementById('ro-speed').value;
-  const srch = document.getElementById('ro-srch').value.toLowerCase();
-
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - days);
-
-  const arts = getArtStats();
-  const reorderItems = arts.filter(a => {
-    if (a.purchased <= 0) return false;
-    if (!a.saleDates.length) return false;
-    const soldInWindow = a.saleDates.some(s => s.date >= cutoff);
-    if (!soldInWindow) return false;
-    return true;
-  }).map(a => {
-    const soldInPeriod = a.saleDates.filter(s => s.date >= cutoff).reduce((sum,s)=>sum+s.qty, 0);
-    let reorderMultiplier = 1;
-    let speedClass = 'fast';
-    if (a.daysToSell !== null && a.daysToSell <= 10) {
-      reorderMultiplier = 2;
-      speedClass = 'super';
-    } else if (a.daysToSell !== null && a.daysToSell <= 30) {
-      reorderMultiplier = 1;
-      speedClass = 'fast';
-    }
-    return { ...a, soldInPeriod, reorderMultiplier, speedClass, reorderQty: a.purchased * reorderMultiplier };
-  }).sort((a,b) => b.soldInPeriod - a.soldInPeriod);
-
-  const filtered = reorderItems.filter(r => {
-    if (brF && r.brand !== brF) return false;
-    if (supF && r.supplier !== supF) return false;
-    if (speedF && r.speedClass !== speedF) return false;
-    if (srch && !(r.lotNo||'').toLowerCase().includes(srch) && !(r.item||'').toLowerCase().includes(srch)) return false;
-    return true;
-  });
-  lastReorderData = filtered;
-
-  const superFastCount = filtered.filter(r=>r.speedClass==='super').length;
-  const fastCount = filtered.filter(r=>r.speedClass==='fast').length;
-  const totalReorderQty = filtered.reduce((s,r)=>s+r.reorderQty, 0);
-  const estimatedCost = filtered.reduce((s,r)=>s+(r.reorderQty * r.avgCost), 0);
-
-  setMG('ro-m',[
-    {l:'Items to reorder',     v:filtered.length},
-    {l:'Super fast (2×)',     v:superFastCount, s:'sold in <10 days', c:'up'},
-    {l:'Fast (1×)',           v:fastCount, s:'sold in <30 days', c:'up'},
-    {l:'Total reorder qty',   v:totalReorderQty.toLocaleString()},
-    {l:'Estimated cost',      v:'₹'+Math.round(estimatedCost).toLocaleString('en-IN')},
-  ]);
-
-  document.getElementById('ro-body').innerHTML = filtered.slice(0, 500).map(r => {
-    const speedBadge = r.speedClass === 'super'
-      ? '<span class="tag tg">🔥 Super Fast (2×)</span>'
-      : '<span class="tag tb">⚡ Fast (1×)</span>';
-    const daysDisplay = r.daysToSell !== null ? r.daysToSell + ' days' : '—';
-    return `<tr>
-      <td style="font-family:'DM Mono',monospace;font-size:10px">${r.lotNo||'—'}</td>
-      <td style="font-weight:600">${r.item||'—'}</td>
-      <td>${r.brand||'—'}</td>
-      <td>${r.supplier||'—'}</td>
-      <td>${r.size||'—'}</td>
-      <td>${r.purchased}</td>
-      <td>${r.netSold}</td>
-      <td style="font-weight:600;color:var(--green-m)">${r.soldInPeriod}</td>
-      <td>${daysDisplay}</td>
-      <td style="font-weight:700;color:${r.liveStock===0?'var(--red-m)':r.liveStock<=5?'var(--amber-m)':'var(--green-m)'}">${r.liveStock}</td>
-      <td>${speedBadge}</td>
-      <td style="font-weight:700;background:var(--green-l);color:var(--green)">${r.reorderQty}</td>
-    </tr>`;
-  }).join('') || noData(12);
-}
-
-function exportReorder() {
-  const d = lastReorderData.map(r=>[r.lotNo,r.item,r.brand,r.supplier,r.size,r.purchased,r.netSold,r.soldInPeriod,r.daysToSell||'—',r.liveStock,r.speedClass==='super'?'Super Fast (2×)':'Fast (1×)',r.reorderQty]);
-  downloadExcel(d,['Lot No','Item','Brand','Supplier','Size','Purchased','Sold','Sold in Period','Days to Sell','Live Stock','Speed','Reorder Qty'],'PAL_Reorder_'+new Date().toISOString().split('T')[0]);
-}
-
-// ═══════ COMPANY-WISE STOCK ═══════
-function buildCompanyStock() { renderCompanyStock(); }
-
-function renderCompanyStock() {
-  const srch = document.getElementById('cw-srch').value.toLowerCase();
-  const sort = document.getElementById('cw-sort').value;
-  const arts = getArtStats();
-  const byCompany = {};
-  arts.forEach(a => {
-    const brand = a.brand || 'Unknown';
-    if (!byCompany[brand]) byCompany[brand] = { brand, articles:[], totalStock:0, totalValue:0, totalPurchased:0, totalSold:0 };
-    byCompany[brand].articles.push(a);
-    byCompany[brand].totalStock += a.liveStock;
-    byCompany[brand].totalValue += a.stockVal;
-    byCompany[brand].totalPurchased += a.purchased;
-    byCompany[brand].totalSold += a.netSold;
-  });
-  let groups = Object.values(byCompany);
-  if (srch) groups = groups.filter(g => g.brand.toLowerCase().includes(srch));
-  if (sort === 'stock') groups.sort((a,b)=>b.totalStock-a.totalStock);
-  else if (sort === 'value') groups.sort((a,b)=>b.totalValue-a.totalValue);
-  else if (sort === 'sold') groups.sort((a,b)=>b.totalSold-a.totalSold);
-  else if (sort === 'name') groups.sort((a,b)=>a.brand.localeCompare(b.brand));
-  setMG('cw-m',[{l:'Total companies',v:groups.length},{l:'Total stock',v:groups.reduce((s,g)=>s+g.totalStock,0).toLocaleString()+' units'},{l:'Total value',v:'₹'+Math.round(groups.reduce((s,g)=>s+g.totalValue,0)).toLocaleString('en-IN')},{l:'Top company',v:groups[0]?groups[0].brand:'—',s:groups[0]?groups[0].totalStock+' units':''}]);
-  document.getElementById('cw-list').innerHTML = groups.map((g, idx) => `
-    <div class="group-card"><div class="group-head" onclick="toggleGroup('cw-body-${idx}', this.querySelector('.chev'))"><div><div class="group-title">${g.brand}</div><div class="group-stats"><span><span class="group-stat-val">${g.articles.length}</span> items</span><span><span class="group-stat-val">${g.totalStock.toLocaleString()}</span> in stock</span><span><span class="group-stat-val">${g.totalPurchased.toLocaleString()}</span> purchased</span><span><span class="group-stat-val">${g.totalSold.toLocaleString()}</span> sold</span><span>Value <span class="group-stat-val">₹${Math.round(g.totalValue).toLocaleString('en-IN')}</span></span></div></div><div class="chev">▶</div></div>
-      <div class="group-body" id="cw-body-${idx}"><div class="tw"><table><thead><tr><th>Lot No.</th><th>Item</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Live Stock</th><th>Avg Cost</th><th>Value</th></tr></thead><tbody>${g.articles.sort((a,b)=>b.liveStock-a.liveStock).map(a=>`<tr><td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td><td style="font-weight:600">${a.item||'—'}</td><td>${a.size||'—'}</td><td>${a.purchased}</td><td>${a.netSold}</td><td style="font-weight:700;color:${a.liveStock===0?'var(--red-m)':a.liveStock<=5?'var(--amber-m)':'var(--green-m)'}">${a.liveStock}</td><td>₹${Math.round(a.avgCost)}</td><td style="font-weight:600">₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td></tr>`).join('')}</tbody></table></div></div></div>`).join('') || '<div class="empty">No company data yet — upload files</div>';
-}
-
-function exportCompanyStock() {
-  const arts = getArtStats();
-  const d = arts.map(a=>[a.brand||'Unknown',a.lotNo,a.item,a.size,a.purchased,a.netSold,a.liveStock,Math.round(a.avgCost),Math.round(a.stockVal)]);
-  downloadExcel(d,['Brand','Lot No','Item','Size','Purchased','Sold','Live Stock','Avg Cost','Stock Value'],'PAL_CompanyStock_'+new Date().toISOString().split('T')[0]);
-}
-
-function toggleGroup(id, chev) { const el = document.getElementById(id); if (el) { el.classList.toggle('open'); chev?.classList.toggle('open'); } }
-
-// ═══════ SUPPLIER-WISE STOCK ═══════
-function buildSupplierStock() { renderSupplierStock(); }
-
-function renderSupplierStock() {
-  const srch = document.getElementById('sw-srch').value.toLowerCase();
-  const sort = document.getElementById('sw-sort').value;
-  const arts = getArtStats();
-  const bySupplier = {};
-  arts.forEach(a => {
-    const sup = a.supplier || 'Unknown Supplier';
-    if (!bySupplier[sup]) bySupplier[sup] = { supplier:sup, articles:[], totalStock:0, totalValue:0, totalPurchased:0, totalSold:0 };
-    bySupplier[sup].articles.push(a);
-    bySupplier[sup].totalStock += a.liveStock;
-    bySupplier[sup].totalValue += a.stockVal;
-    bySupplier[sup].totalPurchased += a.purchased;
-    bySupplier[sup].totalSold += a.netSold;
-  });
-  let groups = Object.values(bySupplier);
-  if (srch) groups = groups.filter(g => g.supplier.toLowerCase().includes(srch));
-  if (sort === 'stock') groups.sort((a,b)=>b.totalStock-a.totalStock);
-  else if (sort === 'value') groups.sort((a,b)=>b.totalValue-a.totalValue);
-  else if (sort === 'purchased') groups.sort((a,b)=>b.totalPurchased-a.totalPurchased);
-  else if (sort === 'name') groups.sort((a,b)=>a.supplier.localeCompare(b.supplier));
-  setMG('sw-m',[{l:'Total suppliers',v:groups.length},{l:'Total stock',v:groups.reduce((s,g)=>s+g.totalStock,0).toLocaleString()+' units'},{l:'Total value',v:'₹'+Math.round(groups.reduce((s,g)=>s+g.totalValue,0)).toLocaleString('en-IN')},{l:'Top supplier',v:groups[0]?groups[0].supplier:'—',s:groups[0]?groups[0].totalStock+' units':''}]);
-  document.getElementById('sw-list').innerHTML = groups.map((g, idx) => `
-    <div class="group-card"><div class="group-head" onclick="toggleGroup('sw-body-${idx}', this.querySelector('.chev'))"><div><div class="group-title">${g.supplier}</div><div class="group-stats"><span><span class="group-stat-val">${g.articles.length}</span> items</span><span><span class="group-stat-val">${g.totalStock.toLocaleString()}</span> in stock</span><span><span class="group-stat-val">${g.totalPurchased.toLocaleString()}</span> purchased</span><span><span class="group-stat-val">${g.totalSold.toLocaleString()}</span> sold</span><span>Value <span class="group-stat-val">₹${Math.round(g.totalValue).toLocaleString('en-IN')}</span></span></div></div><div class="chev">▶</div></div>
-      <div class="group-body" id="sw-body-${idx}"><div class="tw"><table><thead><tr><th>Lot No.</th><th>Item</th><th>Brand</th><th>Size</th><th>Purchased</th><th>Sold</th><th>Live Stock</th><th>Avg Cost</th><th>Value</th></tr></thead><tbody>${g.articles.sort((a,b)=>b.liveStock-a.liveStock).map(a=>`<tr><td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td><td style="font-weight:600">${a.item||'—'}</td><td>${a.brand||'—'}</td><td>${a.size||'—'}</td><td>${a.purchased}</td><td>${a.netSold}</td><td style="font-weight:700;color:${a.liveStock===0?'var(--red-m)':a.liveStock<=5?'var(--amber-m)':'var(--green-m)'}">${a.liveStock}</td><td>₹${Math.round(a.avgCost)}</td><td style="font-weight:600">₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td></tr>`).join('')}</tbody></table></div></div></div>`).join('') || '<div class="empty">No supplier data yet — upload files</div>';
-}
-
-function exportSupplierStock() {
-  const arts = getArtStats();
-  const d = arts.map(a=>[a.supplier||'Unknown',a.lotNo,a.item,a.brand,a.size,a.purchased,a.netSold,a.liveStock,Math.round(a.avgCost),Math.round(a.stockVal)]);
-  downloadExcel(d,['Supplier','Lot No','Item','Brand','Size','Purchased','Sold','Live Stock','Avg Cost','Stock Value'],'PAL_SupplierStock_'+new Date().toISOString().split('T')[0]);
-}
-
-function buildFastMovers() {
-  const arts=getArtStats().sort((a,b)=>b.netSold-a.netSold);
-  const top=arts[0];
-  setMG('fm-m',[{l:'Top lot no.',v:top?top.lotNo||top.item:'—',s:top?top.item:''},{l:'Super fast items',v:arts.filter(a=>a.netSold>10).length},{l:'Total items sold',v:[...new Set(G.sale.map(r=>r.lotNo||r.item))].length},{l:'Avg return rate',v:G.sale.reduce((s,r)=>s+r.qty,0)>0?Math.round(G.returns.reduce((s,r)=>s+r.qty,0)/G.sale.reduce((s,r)=>s+r.qty,0)*100)+'%':'0%'}]);
-  mkBars('fm-bars',arts.slice(0,8).map(a=>({label:(a.lotNo||a.item||'').substring(0,20),qty:a.netSold})),'label','qty');
-  const cats={};
-  G.sale.forEach(r=>{const k=norm(r.item)||'Unknown';if(!cats[k])cats[k]={item:k,qty:0};cats[k].qty+=r.qty;});
-  G.returns.forEach(r=>{const k=norm(r.item)||'Unknown';if(cats[k])cats[k].qty-=r.qty;});
-  mkBars('cat-bars2',Object.values(cats).sort((a,b)=>b.qty-a.qty),'item','qty');
-  renderFM();
-}
-
-function renderFM() {
-  const arts=getArtStats().sort((a,b)=>b.netSold-a.netSold);
-  const catF=document.getElementById('fm-cat').value;
-  const brF=document.getElementById('fm-br').value;
-  const srch=document.getElementById('fm-srch').value.toLowerCase();
-  const f=arts.filter(a=>{
-    if(catF && a.item!==catF) return false;
-    if(brF && a.brand!==brF) return false;
-    if(srch&&!(a.lotNo||'').toLowerCase().includes(srch)&&!(a.item||'').toLowerCase().includes(srch)) return false;
-    return a.netSold>0;
-  });
-  lastFMData = f;
-  document.getElementById('fm-body').innerHTML=f.slice(0,100).map((a,i)=>`<tr>
-    <td><div class="rk ${i<3?'r'+(i+1):'rn'}">${i+1}</div></td>
-    <td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td>
-    <td style="font-weight:600">${a.item||'—'}</td>
-    <td>${a.brand||'—'}</td>
-    <td>${a.size||'—'}</td>
-    <td>${a.grossSold}</td>
-    <td style="${a.returned>0?'color:var(--purple-m);font-weight:600':''}">${a.returned}</td>
-    <td style="font-weight:700">${a.netSold}</td>
-    <td>${avgDayTag(a)}</td>
-  </tr>`).join('')||noData(9);
-}
-
-function exportFM() {
-  const d = lastFMData.map((a,i)=>[i+1,a.lotNo,a.item,a.brand,a.size,a.grossSold,a.returned,a.netSold,avgDayText(a)]);
-  downloadExcel(d,['#','Lot No','Item','Brand','Size','Gross Sold','Returned','Net Sold','Speed'],'PAL_FastMovers_'+new Date().toISOString().split('T')[0]);
-}
-
-function buildBrands() {
-  const brs=getBrandStats();
-  const top=brs[0];
-  const highRet=[...brs].sort((a,b)=>b.retRate-a.retRate)[0];
-  setMG('br-m',[{l:'Total brands',v:[...new Set(G.sale.map(r=>r.brand).filter(Boolean))].length},{l:'Top brand',v:top?top.brand:'—',s:top?top.netSold+' net units':''},{l:'Highest return rate',v:highRet?highRet.brand:'—',s:highRet?highRet.retRate+'%':'',c:'dn'},{l:'Total net sold',v:brs.reduce((s,b)=>s+b.netSold,0)}]);
-  mkBars('br-bars',brs.slice(0,8),'brand','netSold');
-  renderBr();
-}
-
-function renderBr() {
-  const brs=getBrandStats();
-  const catF=document.getElementById('br-cat').value;
-  const f=brs.filter(b=>!catF||b.category===catF);
-  lastBrData = f;
-  document.getElementById('br-body').innerHTML=f.slice(0,100).map((b,i)=>`<tr>
-    <td><div class="rk ${i<3?'r'+(i+1):'rn'}">${i+1}</div></td>
-    <td style="font-weight:600">${b.brand}</td><td>${b.category}</td><td>${b.grossSold}</td>
-    <td style="${b.returned>0?'color:var(--purple-m);font-weight:600':''}">${b.returned}</td>
-    <td style="font-weight:700">${b.netSold}</td>
-    <td><span class="tag ${b.retRate>15?'tr':b.retRate>5?'ta':'tg'}">${b.retRate}%</span></td>
-  </tr>`).join('')||noData(7);
-}
-
-function exportBrands() {
-  const d = lastBrData.map((b,i)=>[i+1,b.brand,b.category,b.grossSold,b.returned,b.netSold,b.retRate+'%']);
-  downloadExcel(d,['#','Brand','Category','Gross Sold','Returned','Net Sold','Return Rate'],'PAL_Brands_'+new Date().toISOString().split('T')[0]);
-}
-
-function buildReturns() {
-  const total=G.returns.reduce((s,r)=>s+r.qty,0);
-  const grossSold=G.sale.reduce((s,r)=>s+r.qty,0);
-  const retRate=grossSold>0?Math.round(total/grossSold*100):0;
-  setMG('ret-m',[{l:'Total returned',v:total},{l:'Return rate',v:retRate+'%',s:retRate>10?'High — check quality':'Normal',c:retRate>10?'dn':'up'},{l:'Brands with returns',v:[...new Set(G.returns.map(r=>r.brand).filter(Boolean))].length},{l:'Restocked',v:total,s:'added back automatically',c:'pu'}]);
-  const alerts=[];
-  if(retRate>15) alerts.push(`Overall return rate ${retRate}% is very high`);
-  document.getElementById('ret-alerts').innerHTML=alerts.map(a=>`<div class="alert-r">⚠️ ${a}</div>`).join('');
-  if(!G.returns.length){['ret-br-bars','ret-item-bars'].forEach(id=>document.getElementById(id).innerHTML='<div class="empty">No returns</div>');document.getElementById('ret-body').innerHTML=noData(8);return;}
-  const brands={},items={};
-  G.returns.forEach(r=>{brands[r.brand||'Unknown']=(brands[r.brand||'Unknown']||0)+r.qty;items[r.item||'Unknown']=(items[r.item||'Unknown']||0)+r.qty;});
-  mkBars('ret-br-bars',Object.entries(brands).sort((a,b)=>b[1]-a[1]).map(([brand,qty])=>({brand,qty})),'brand','qty',['#6a58d0']);
-  mkBars('ret-item-bars',Object.entries(items).sort((a,b)=>b[1]-a[1]).map(([item,qty])=>({item,qty})),'item','qty',['#d85a30']);
-  document.getElementById('ret-body').innerHTML=G.returns.slice(0,100).map(r=>`<tr><td>${r.date||'—'}</td><td style="font-family:'DM Mono',monospace;font-size:10px">${r.lotNo||'—'}</td><td>${r.brand||'—'}</td><td>${r.item||'—'}</td><td>${r.category||'—'}</td><td>${r.size||'—'}</td><td style="color:var(--purple-m);font-weight:700">${r.qty}</td><td><span class="tag tp">Re-stocked</span></td></tr>`).join('');
-}
-
-function exportReturns() {
-  const d = G.returns.map(r=>[r.date,r.lotNo,r.brand,r.item,r.category,r.size,r.qty,'Re-stocked']);
-  downloadExcel(d,['Date','Lot No','Brand','Item','Category','Size','Qty Returned','Status'],'PAL_Returns_'+new Date().toISOString().split('T')[0]);
-}
-
-function buildDead() {
-  const arts=getArtStats();
-  const dead=arts.filter(a=>a.daysSince>=90&&a.liveStock>0).sort((a,b)=>b.daysSince-a.daysSince);
-  const dv=dead.reduce((s,a)=>s+a.stockVal,0);
-  setMG('ds-m',[{l:'Dead items',v:dead.length,c:'dn'},{l:'Capital blocked',v:'₹'+Math.round(dv).toLocaleString('en-IN'),c:'dn'},{l:'Oldest unsold',v:dead[0]?dead[0].daysSince+'d':'—',s:dead[0]?dead[0].lotNo||dead[0].item:''},{l:'180+ days',v:dead.filter(a=>a.daysSince>=180).length,c:'dn'}]);
-  const al=[];
-  if(dead.filter(a=>a.daysSince>=180).length) al.push(dead.filter(a=>a.daysSince>=180).length+' articles beyond 180 days — clearance recommended');
-  document.getElementById('ds-alerts').innerHTML=al.map(a=>`<div class="alert-r">⚠️ ${a}</div>`).join('');
-  const supM={},itemM={};
-  dead.forEach(a=>{supM[a.supplier||'Unknown']=(supM[a.supplier||'Unknown']||0)+1;itemM[a.item||'Unknown']=(itemM[a.item||'Unknown']||0)+a.liveStock;});
-  mkBars('ds-sup-bars',Object.entries(supM).sort((a,b)=>b[1]-a[1]).map(([s,n])=>({s,n})),'s','n',['#d85a30']);
-  mkBars('ds-item-bars',Object.entries(itemM).sort((a,b)=>b[1]-a[1]).map(([item,n])=>({item,n})),'item','n',['#e89008']);
-  document.getElementById('ds-body').innerHTML=dead.slice(0,100).map(a=>`<tr><td style="font-family:'DM Mono',monospace;font-size:10px">${a.lotNo||'—'}</td><td style="font-weight:600">${a.item||'—'}</td><td>${a.supplier||'—'}</td><td>${a.size||'—'}</td><td style="font-weight:700">${a.liveStock}</td><td>₹${Math.round(a.avgCost)}</td><td style="font-weight:700;color:var(--red-m)">₹${Math.round(a.stockVal).toLocaleString('en-IN')}</td><td>${a.lastSale?a.lastSale.toLocaleDateString('en-IN'):'Never'}</td><td style="color:var(--red-m);font-weight:700">${a.daysSince>=9999?'Never':a.daysSince+' days'}</td><td><span class="tag ${a.daysSince>=180?'tr':a.daysSince>=120?'ta':'tgr'}">${a.daysSince>=180?'Clearance':a.daysSince>=120?'30% off':'20% off'}</span></td></tr>`).join('')||noData(10);
-}
-
-function exportDead() {
-  const arts=getArtStats();
-  const dead=arts.filter(a=>a.daysSince>=90&&a.liveStock>0).sort((a,b)=>b.daysSince-a.daysSince);
-  const d = dead.map(a=>[a.lotNo,a.item,a.supplier,a.size,a.liveStock,Math.round(a.avgCost),Math.round(a.stockVal),a.lastSale?a.lastSale.toLocaleDateString('en-IN'):'Never',a.daysSince>=9999?'Never':a.daysSince,a.daysSince>=180?'Clearance':a.daysSince>=120?'30% off':'20% off']);
-  downloadExcel(d,['Lot No','Item','Supplier','Size','Live Stock','Avg Cost','Value Blocked','Last Sale','Days Unsold','Action'],'PAL_DeadStock_'+new Date().toISOString().split('T')[0]);
-}
-
-function buildPurReg() { renderPur(); }
-function buildSalReg() { renderSal(); }
-
-function renderPur() {
-  const supF=document.getElementById('pur-sup').value;
-  const itemF=document.getElementById('pur-item').value;
-  const srch=document.getElementById('pur-srch').value.toLowerCase();
-  const f=G.purchase.filter(r=>{
-    if(supF&&norm(r.supplier)!==supF) return false;
-    if(itemF&&norm(r.item)!==itemF) return false;
-    if(srch&&!(r.lotNo||'').toLowerCase().includes(srch)&&!(r.item||'').toLowerCase().includes(srch)) return false;
-    return true;
-  });
-  lastPurData = f;
-  document.getElementById('pur-body').innerHTML=f.slice(0,500).map(r=>`<tr><td>${r.date||'—'}</td><td>${r.supplier||'—'}</td><td style="font-weight:600">${r.item||'—'}</td><td>${r.size||'—'}</td><td style="font-family:'DM Mono',monospace;font-size:10px">${r.lotNo||'—'}</td><td style="font-weight:600">${r.qty}</td><td>₹${Math.round(r.rate||0)}</td><td style="font-weight:600">₹${Math.round((r.qty*(r.rate||0))).toLocaleString('en-IN')}</td></tr>`).join('')||noData(8);
-}
-
-function exportPurchase() {
-  const d = lastPurData.map(r=>[r.date,r.supplier,r.item,r.size,r.lotNo,r.qty,Math.round(r.rate||0),Math.round(r.qty*(r.rate||0))]);
-  downloadExcel(d,['Date','Supplier','Item','Size','Lot No','Qty','Rate','Amount'],'PAL_Purchase_'+new Date().toISOString().split('T')[0]);
-}
-
-function renderSal() {
-  const brF=document.getElementById('sal-br').value;
-  const catF=document.getElementById('sal-cat').value;
-  const srch=document.getElementById('sal-srch').value.toLowerCase();
-  const allSale=[...G.sale.map(r=>({...r,isReturn:false})),...G.returns.map(r=>({...r,isReturn:true}))];
-  const f=allSale.filter(r=>{
-    if(brF&&norm(r.brand)!==brF) return false;
-    if(catF&&norm(r.category)!==catF) return false;
-    if(srch&&!(r.item||'').toLowerCase().includes(srch)&&!(r.lotNo||'').toLowerCase().includes(srch)) return false;
-    return true;
-  });
-  lastSalData = f;
-  document.getElementById('sal-body').innerHTML=f.slice(0,500).map(r=>`<tr><td>${r.date||'—'}</td><td>${r.brand||'—'}</td><td>${r.category||'—'}</td><td style="font-weight:600">${r.item||'—'}</td><td>${r.size||'—'}</td><td style="font-family:'DM Mono',monospace;font-size:10px">${r.lotNo||'—'}</td><td style="font-weight:700;color:${r.isReturn?'var(--purple-m)':'var(--text)'}">${r.isReturn?'-':'+'}${r.qty}</td><td>${r.isReturn?'<span class="tag tp">Return</span>':'<span class="tag tg">Sale</span>'}</td></tr>`).join('')||noData(8);
-}
-
-function exportSale() {
-  const d = lastSalData.map(r=>[r.date,r.brand,r.category,r.item,r.size,r.lotNo,r.isReturn?-r.qty:r.qty,r.isReturn?'Return':'Sale']);
-  downloadExcel(d,['Date','Brand','Category','Item','Size','Lot No','Qty','Type'],'PAL_Sale_'+new Date().toISOString().split('T')[0]);
-}
-
-/* ═══════ POPULATE FILTERS — uses normalized artStats values ═══════ */
-function populateFilters() {
-  const arts = getArtStats();
-  const cats=[...new Set(arts.map(a=>a.item).filter(Boolean))].sort();
-  const brs=[...new Set(G.sale.map(r=>norm(r.brand)).filter(Boolean))].sort();
-  // FIX: Supplier dropdown from artStats computed values (already normalized)
-  const sups=[...new Set(arts.map(a=>a.supplier).filter(Boolean))].sort();
-  const items=[...new Set(G.purchase.map(r=>norm(r.item)).filter(Boolean))].sort();
-  const allBrands = [...new Set([...brs, ...G.purchase.map(r=>norm(r.brand)).filter(Boolean)])].sort();
-  const setOpts=(id,vals,label)=>{const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option value="${v}">${v}</option>`).join('');el.value=cur;};
-  setOpts('inv-cat',cats,'All items');setOpts('inv-sup',sups,'All suppliers');setOpts('inv-brand',allBrands,'All brands');
+  const groups=[...new Set(arts.map(a=>a.group).filter(Boolean))].sort();
+  setOpts('inv-cat',cats,'All items');setOpts('inv-grp',groups,'All groups');setOpts('inv-sup',sups,'All suppliers');setOpts('inv-brand',allBrands,'All brands');
   setOpts('fm-cat',cats,'All items');setOpts('fm-br',brs,'All brands');
   setOpts('br-cat',[...new Set(G.sale.map(r=>norm(r.category)).filter(Boolean))].sort(),'All categories');
   setOpts('pur-sup',sups,'All suppliers');setOpts('pur-item',items,'All items');
@@ -2599,17 +1306,6 @@ function sw(id, el) {
   if(id==='upload') loadUlog();
   if(id==='weekly') setThisWeek();
 }
-
-async function clearData(type) {
-  if(!confirm(`Permanently delete ALL ${type} data?`)) return;
-  await fetch('/api/data/'+type,{method:'DELETE'});
-  await loadData();
-  alert(type+' data cleared.');
-}
-</script>
-</body>
-</html>
-
 
 async function clearData(type) {
   if(!confirm(`Permanently delete ALL ${type} data?`)) return;
