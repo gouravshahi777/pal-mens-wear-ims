@@ -615,8 +615,8 @@ function showPage(id) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const target = document.getElementById(id);
   target.classList.add('active');
-  // Slide-up animation when opening dashboard or staff page after login
   if (id !== 'pg-login') { target.classList.add('page-enter'); }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 (async()=>{ try { await fetch('/api/logout',{method:'POST'}); } catch {} })();
 
