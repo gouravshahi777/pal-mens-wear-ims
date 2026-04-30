@@ -22,7 +22,6 @@ async function connectDB() {
     db = client.db(DB_NAME);
     console.log('✅ Connected to MongoDB Atlas — data is safe forever!');
 
-    // Create collections if they don't exist
     const collections = await db.listCollections().toArray();
     const names = collections.map(c => c.name);
     if (!names.includes('purchases'))   await db.createCollection('purchases');
@@ -73,15 +72,12 @@ async function appendRowsDedup(type, rows) {
   try {
     if (rows.length === 0) return { added: 0, skipped: 0 };
 
-    // Get existing rows from DB
     const existing = await db.collection(collName).find({}).toArray();
 
-    // Build set of existing keys
     const existingKeys = new Set();
     const keyFn = type === 'purchase' ? makePurchaseKey : makeSaleKey;
     existing.forEach(r => existingKeys.add(keyFn(r)));
 
-    // Filter out duplicates
     const newRows = [];
     let skipped = 0;
     for (const row of rows) {
@@ -90,7 +86,7 @@ async function appendRowsDedup(type, rows) {
         skipped++;
       } else {
         newRows.push(row);
-        existingKeys.add(key); // prevent duplicates within same file too
+        existingKeys.add(key);
       }
     }
 
@@ -125,7 +121,6 @@ async function getUploadLogs() {
 async function addUploadLog(log) {
   try {
     await db.collection('upload_logs').insertOne(log);
-    // Keep only last 200 logs
     const count = await db.collection('upload_logs').countDocuments();
     if (count > 200) {
       const oldest = await db.collection('upload_logs').find({}).sort({ at: 1 }).limit(count - 200).toArray();
@@ -157,7 +152,7 @@ app.use(session({
     mongoUrl: MONGO_URI,
     dbName: DB_NAME,
     collectionName: 'sessions',
-    ttl: 12 * 60 * 60, // 12 hours
+    ttl: 12 * 60 * 60,
   }),
   cookie: {
     maxAge: 12 * 60 * 60 * 1000,
@@ -191,7 +186,7 @@ function parseDateValue(dateRaw) {
   return s;
 }
 
-// ── PURCHASE EXCEL PARSER ─────────────────────────────────────────────────────
+// ── PURCHASE VOUCHER PARSER ───────────────────────────────────────────────────
 function parsePurchase(buffer) {
   const wb   = XLSX.read(buffer, { type: 'buffer', cellDates: false });
   const ws   = wb.Sheets[wb.SheetNames[0]];
@@ -205,7 +200,7 @@ function parsePurchase(buffer) {
       break;
     }
   }
-  if (headerRow === -1) throw new Error('Could not find header row. Purchase file must have columns: BILL DATE (or VOUCHER DATE), PARTY NAME, TOTAL QUANTITY.');
+  if (headerRow === -1) throw new Error('Could not find header row. Purchase Voucher file must have columns: BILL DATE (or VOUCHER DATE), PARTY NAME, TOTAL QUANTITY.');
 
   const headers = (raw[headerRow] || []).map(h => String(h || '').trim().toUpperCase());
 
@@ -282,6 +277,101 @@ function parsePurchase(buffer) {
     }
   }
   return { purchases, salesFromPurchase };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── PURCHASE CHALLAN PARSER (NEW) ─────────────────────────────────────────────
+// Challan format: SNO, CH DATE, CH NO, PARTY NAME, ITEM NAME, PACK/GRADE,
+//                 LOT NO, TOTAL QTY, FREE QTY, GROSS AMOUNT, NET AMOUNT
+// Key differences from Voucher:
+//   - No COMPANY NAME (brand) column
+//   - No RATE/UNIT column (we calculate rate = GROSS AMOUNT / TOTAL QTY)
+//   - Date column is "CH DATE" not "BILL DATE"
+//   - Header detected by "CH DATE" + "PARTY NAME"
+// ══════════════════════════════════════════════════════════════════════════════
+function parseChallan(buffer) {
+  const wb   = XLSX.read(buffer, { type: 'buffer', cellDates: false });
+  const ws   = wb.Sheets[wb.SheetNames[0]];
+  const raw  = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+
+  let headerRow = -1;
+  for (let i = 0; i < Math.min(raw.length, 15); i++) {
+    const rowStr = (raw[i] || []).join('|').toUpperCase();
+    if (rowStr.includes('CH DATE') && rowStr.includes('PARTY NAME')) {
+      headerRow = i;
+      break;
+    }
+  }
+  if (headerRow === -1) throw new Error('Could not find header row. Purchase Challan file must have columns: CH DATE, PARTY NAME, ITEM NAME, TOTAL QTY.');
+
+  const headers = (raw[headerRow] || []).map(h => String(h || '').trim().toUpperCase());
+
+  const findCol = (patterns) => {
+    for (const p of patterns) {
+      const exact = headers.indexOf(p.toUpperCase());
+      if (exact !== -1) return exact;
+    }
+    for (const p of patterns) {
+      const partial = headers.findIndex(h => h.includes(p.toUpperCase()));
+      if (partial !== -1) return partial;
+    }
+    return -1;
+  };
+
+  const iDate    = findCol(['CH DATE']);
+  const iChNo    = findCol(['CH NO.', 'CH NO']);
+  const iParty   = findCol(['PARTY NAME']);
+  const iItem    = findCol(['ITEM NAME']);
+  const iPack    = findCol(['PACK/GRADE', 'PACK / GRADE', 'PACK/SIZE', 'PACK / SIZE', 'PACK']);
+  const iLot     = findCol(['LOT NO.', 'LOT NO', 'LOT NUMBER']);
+  const iQty     = findCol(['TOTAL QTY', 'TOTAL QUANTITY']);
+  const iFreeQty = findCol(['FREE QTY']);
+  const iGross   = findCol(['GROSS AMOUNT']);
+  const iNet     = findCol(['NET AMOUNT']);
+
+  if (iDate === -1 || iQty === -1)
+    throw new Error('Missing required columns: CH DATE, TOTAL QTY');
+
+  const purchases = [];
+
+  for (let i = headerRow + 1; i < raw.length; i++) {
+    const r = raw[i] || [];
+    const sno = r[0];
+    if (!sno) continue;
+    const snoNum = parseFloat(String(sno || '').trim());
+    if (isNaN(snoNum)) continue;
+
+    const dateStr = parseDateValue(r[iDate]);
+    const qty  = parseFloat(r[iQty]) || 0;
+    if (qty === 0) continue;
+
+    const absQty = Math.abs(qty);
+    const grossAmt = iGross >= 0 ? (parseFloat(r[iGross]) || 0) : 0;
+    const netAmt   = iNet   >= 0 ? (parseFloat(r[iNet])   || 0) : 0;
+    const calcRate = absQty > 0 && grossAmt > 0 ? Math.round(grossAmt / absQty) : 0;
+    const party    = String(iParty >= 0 ? r[iParty] || '' : '').trim();
+    const item     = String(iItem  >= 0 ? r[iItem]  || '' : '').trim();
+
+    // Skip "GRAND TOTALS" row
+    if (item.toUpperCase() === 'GRAND TOTALS') continue;
+
+    purchases.push({
+      date:     dateStr,
+      billNo:   String(iChNo >= 0 ? r[iChNo] || '' : '').trim(),
+      supplier: party,
+      brand:    '',  // Challan has no Company/Brand column
+      item:     item,
+      size:     String(iPack >= 0 ? r[iPack] || '' : '').trim(),
+      shade:    '',
+      lotNo:    String(iLot  >= 0 ? r[iLot]  || '' : '').trim(),
+      qty:      absQty,
+      rate:     calcRate,
+      amount:   netAmt || grossAmt || (absQty * calcRate),
+      source:   'challan',  // Tag so we know it came from challan
+    });
+  }
+
+  return { purchases };
 }
 
 // ── SALE EXCEL PARSER ─────────────────────────────────────────────────────────
@@ -391,8 +481,8 @@ app.get('/api/me', (req, res) => {
 // ── UPLOAD ────────────────────────────────────────────────────────────────────
 app.post('/api/upload/:type', auth(['owner', 'staff']), upload.single('file'), async (req, res) => {
   const type = req.params.type;
-  if (!['purchase', 'sale'].includes(type))
-    return res.status(400).json({ error: 'Type must be purchase or sale' });
+  if (!['purchase', 'sale', 'challan'].includes(type))
+    return res.status(400).json({ error: 'Type must be purchase, challan, or sale' });
   if (!req.file)
     return res.status(400).json({ error: 'No file uploaded' });
 
@@ -412,10 +502,21 @@ app.post('/api/upload/:type', auth(['owner', 'staff']), upload.single('file'), a
         skippedRows += r.skipped;
       }
       if (!purchaseRows && !convertedRows && !skippedRows)
-        return res.status(400).json({ error: 'No valid rows found in purchase file.' });
+        return res.status(400).json({ error: 'No valid rows found in purchase voucher file.' });
+
+    } else if (type === 'challan') {
+      // ── PURCHASE CHALLAN UPLOAD ──
+      const result = parseChallan(req.file.buffer);
+      if (result.purchases.length) {
+        const r = await appendRowsDedup('purchase', result.purchases);
+        purchaseRows = r.added;
+        skippedRows += r.skipped;
+      }
+      if (!purchaseRows && !skippedRows)
+        return res.status(400).json({ error: 'No valid rows found in purchase challan file.' });
+
     } else {
-      // For sale files: no row-level dedup (same item can sell multiple times)
-      // Instead, check if this exact filename was already uploaded
+      // Sale file
       const logs = await getUploadLogs();
       const alreadyUploaded = logs.some(l => l.type === 'sale' && l.filename === req.file.originalname);
       if (alreadyUploaded) {
@@ -466,7 +567,6 @@ app.get('/api/data', auth(['owner', 'manager']), async (req, res) => {
   const [purchase, sale, returns] = await Promise.all([
     readAll('purchase'), readAll('sale'), readAll('returns')
   ]);
-  // Remove MongoDB _id from response to keep frontend compatible
   const clean = arr => arr.map(({ _id, ...rest }) => rest);
   res.json({ purchase: clean(purchase), sale: clean(sale), returns: clean(returns) });
 });
@@ -510,7 +610,6 @@ connectDB().then(() => {
   app.listen(PORT, '0.0.0.0', () => console.log(`✅ PAL MENS WEAR IMS running on port ${PORT}`));
 });
 
-// Prevent crashes from unhandled errors
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err.message);
 });
