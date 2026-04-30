@@ -218,6 +218,17 @@ tbody tr:hover td{background:var(--bg)}
       <div class="up-stat" id="ss"></div>
       <input type="file" id="fs" class="fi-hidden" accept=".xlsx,.xls,.csv" onchange="doUpload(this,'sale','ss')">
     </div>
+    <div class="up-card">
+      <div class="up-title">📋 Purchase Challan</div>
+      <div class="up-sub">Your purchase challan / opening stock Excel</div>
+      <div class="drop-zone" id="dz-c" onclick="document.getElementById('fc').click()" ondragover="dzo(event,'c')" ondragleave="dzl('c')" ondrop="dzd(event,'c')">
+        <div class="drop-ico">📦</div>
+        <div class="drop-txt">Drag & drop Purchase Challan here or click to browse</div>
+        <span class="btn-up" style="background:var(--purple)">Choose File</span>
+      </div>
+      <div class="up-stat" id="sc"></div>
+      <input type="file" id="fc" class="fi-hidden" accept=".xlsx,.xls,.csv" onchange="doUpload(this,'challan','sc')">
+    </div>
   </div>
 </div>
 
@@ -514,6 +525,16 @@ tbody tr:hover td{background:var(--bg)}
           <div class="up-stat" id="oss"></div>
           <input type="file" id="ofs" class="fi-hidden" accept=".xlsx,.xls,.csv" onchange="doUpload(this,'sale','oss')">
         </div>
+        <div class="up-card">
+          <div class="up-title">📋 Purchase Challan</div>
+          <div class="up-sub">Purchase challan / opening stock Excel</div>
+          <div class="drop-zone" onclick="document.getElementById('ofc').click()">
+            <div class="drop-ico">📦</div><div class="drop-txt">Click to upload Purchase Challan</div>
+            <span class="btn-up" style="background:var(--purple)">Choose File</span>
+          </div>
+          <div class="up-stat" id="osc"></div>
+          <input type="file" id="ofc" class="fi-hidden" accept=".xlsx,.xls,.csv" onchange="doUpload(this,'challan','osc')">
+        </div>
         <div class="card"><div class="ct">Upload history</div><div id="ulog"></div></div>
       </div>
 
@@ -589,7 +610,7 @@ function showPage(id) { document.querySelectorAll('.page').forEach(p=>p.classLis
 
 function dzo(e,t){e.preventDefault();document.getElementById('dz-'+t).classList.add('drag');}
 function dzl(t){document.getElementById('dz-'+t)?.classList.remove('drag');}
-function dzd(e,t){ e.preventDefault();dzl(t); const f=e.dataTransfer.files[0]; if(!f)return; const map={p:'purchase',s:'sale'}; const inp=document.getElementById('f'+t); inp._f=f; doUpload(inp,map[t],'s'+t); }
+function dzd(e,t){ e.preventDefault();dzl(t); const f=e.dataTransfer.files[0]; if(!f)return; const map={p:'purchase',s:'sale',c:'challan'}; const inp=document.getElementById('f'+t); inp._f=f; doUpload(inp,map[t],'s'+t); }
 
 async function doUpload(input, type, statId) {
   const file = input._f || input.files[0];
@@ -603,7 +624,8 @@ async function doUpload(input, type, statId) {
     const d = await r.json();
     if (d.success) {
       let msg = '✓ File uploaded — ';
-      if (type==='purchase') msg += d.purchaseRows+' purchase rows saved';
+      if (type==='purchase') msg += d.purchaseRows+' purchase voucher rows saved';
+      else if (type==='challan') msg += d.purchaseRows+' challan rows saved';
       else msg += d.saleRows+' sale rows'+(d.convertedRows?' + '+d.convertedRows+' auto-converted rows':'')+' saved';
       st.className='up-stat st-ok'; st.textContent=msg;
       if (currentRole!=='staff') { loadData(); loadUlog(); }
@@ -627,8 +649,8 @@ async function loadUlog() {
     el.innerHTML = logs.slice(0,30).map(u=>`
       <div class="ulog-row">
         <span style="font-weight:600">${u.filename}</span>
-        <span class="tag ${u.type==='purchase'?'tb':'tg'}">${u.type}</span>
-        <span>${u.type==='purchase'?u.purchaseRows+' rows':u.saleRows+' sales'+(u.convertedRows?', '+u.convertedRows+' converted':'')}</span>
+        <span class="tag ${u.type==='purchase'?'tb':u.type==='challan'?'tp':'tg'}">${u.type}</span>
+        <span>${u.type==='purchase'?u.purchaseRows+' rows':u.type==='challan'?u.purchaseRows+' challan rows':u.saleRows+' sales'+(u.convertedRows?', '+u.convertedRows+' converted':'')}</span>
         <span style="color:var(--muted)">by ${u.by}</span>
         <span style="color:var(--muted)">${new Date(u.at).toLocaleString('en-IN')}</span>
       </div>`).join('');
